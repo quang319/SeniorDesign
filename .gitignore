@@ -222,3 +222,17 @@ pip-log.txt
 *.mcs
 *.mcw
 >>>>>>> parent of d686e42... Changing ignore file
+
+*.as
+*.cof
+*.hex
+*.hxl
+*.hxl
+*.lst
+*.map
+*.rlf
+*.sdb
+*.sym
+*.p1
+*.pre
+funclist
