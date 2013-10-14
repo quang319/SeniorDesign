@@ -215,5 +215,10 @@ pip-log.txt
 .mr.developer.cfg
 
 *.mcp
+<<<<<<< HEAD
 *.mcw
 *.mcs
+=======
+*.mcs
+*.mcw
+>>>>>>> parent of d686e42... Changing ignore file
