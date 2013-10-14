@@ -1,18 +1,12 @@
-/* Alan Hale III
+/* Quang Nguyen
  * GCRobotics
+ * Created 10/14/2013
+ * 
+ *			 ````` Use for Prototype robot `````````
+ * The function of this code is to receive i2cSpeed and i2cDirection from the Arduino
+ * and execute it. PID and encoder counts will not be taken into account for this code
  *
- * Created on February 20, 2013, 7:40 PM
- *
- * GCRobotics Primary PIC main function
- * Controls the aspects of the PICs that are in charge of
- *  controlling the motors and sending feedback to the CPU,
- *  namely the PWM, I2C, and Encoder functions.
- *
- *
- * April 15, 2013, 11:20 AM
- * Created version of project compatible with PIC16F887, which for our
- *  purposes is the same as the 16F917
- *
+ * Note: Motor will not start until a 1 is pass as i2cDirection. 
  */
 
 #include <pic16f887.h>          // 16F887 header file, for all

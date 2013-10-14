@@ -236,3 +236,4 @@ pip-log.txt
 *.p1
 *.pre
 funclist
+*.dep
