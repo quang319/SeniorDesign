@@ -35,14 +35,31 @@ issue.
 
 */
 
-#define PIC_Address 0x02
+#define Front_Left   0x02
+#define Front_Right  0x08
+#define Back_Left    0x06
+#define Back_Right   0x05
+
+#define Forward      0x01
+#define Backward     0x00
+
+#define SlowSpeed    100
+#define MediumSpeed  175
+#define FastSpeed    225
+#define Stop         00
 
 #include <ArduinoHardware.h>
 #include <Wire.h>
 #include <TimerOne.h>
 
-//int ReadOne(char address);
+int ReadOne(char address);
 
+int SerialInput = 0;    // This variable is used to stored the value of the keyboard button that was press
+                                    // if SerialInput = 119 , that mean go forward
+                                    // if SerialInput = 115 , that mean go backward
+                                    // if SerialInput = 97 , that mean strafe left
+                                    // if SerialInput = 100 , that mean strafe right
+                                    // if SerialInput = 120 , that mean STOP!!
 int COUNTS = 0;         // This will contain the number of counts per loop. NOT the total distance
 int i2cDirection = 0, i2cSpeed = 0;   // for incoming serial data
 
@@ -50,25 +67,8 @@ void setup(){
   Wire.begin(); // join i2c bus
   Serial.begin(9600);
   pinMode(13, OUTPUT);
-  
-    while (1) {
-    if (Serial.available() > 0) {                //PIC will be stuck in a while loop until a 1 is sent to
-                // read the incoming byte:
-      i2cDirection = Serial.read();
-      i2cDirection -= 48;
-                // say what you got:
-      Serial.print("I received: ");
-      Serial.println(i2cDirection, DEC);
-      break;
-    }
-  }
-  
-//  delay(10000);
-  Wire.beginTransmission(PIC_Address >> 1 );
-  Wire.write((byte)0);
-  Wire.write((byte)150);
-  Wire.write((byte)i2cDirection);
-  Wire.endTransmission();
+  Serial.print ("Press W to go forward.               "); Serial.println ("Press S to go backward");
+  Serial.print ("Press A to strafe left.              "); Serial.println ("Press D to strafe right");
 }
 
 void loop()
@@ -76,22 +76,62 @@ void loop()
   while (Serial.available() > 0) {
 
     // look for the next valid integer in the incoming serial stream:
-    i2cSpeed = Serial.parseInt(); 
-    // do it again:
-    i2cDirection = Serial.parseInt();
-    Serial.print("i2cSpeed:  "); Serial.print(i2cSpeed, DEC);  Serial.print("       i2cDirection:    ");
-    Serial.println(i2cDirection, DEC); 
-    Wire.beginTransmission(PIC_Address >> 1 );
-    Wire.write((byte)0);
-    Wire.write((byte)i2cSpeed);
-    Wire.write((byte)i2cDirection);
-    Wire.endTransmission();
+    SerialInput = Serial.read();
+    if (SerialInput == 119)                    // W was pressed. Go forward
+    {
+      Serial.print ("You just pressed: W      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
+      i2cWrite(Front_Left,   MediumSpeed,   Forward  );
+      i2cWrite(Front_Right,  MediumSpeed,   Forward  );
+      i2cWrite(Back_Left,    MediumSpeed,   Forward  );
+      i2cWrite(Back_Right,   MediumSpeed,   Forward  );
+      
+    }
+    else if (SerialInput == 115)               // S was pressed. Go backward
+    {
+      Serial.print ("You just pressed: S      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
+      i2cWrite(Front_Left,   MediumSpeed,   Backward  );
+      i2cWrite(Front_Right,  MediumSpeed,   Backward  );
+      i2cWrite(Back_Left,    MediumSpeed,   Backward  );
+      i2cWrite(Back_Right,   MediumSpeed,   Backward  );
+    }
+    else if (SerialInput == 97)               // A was pressed. Go left
+    {
+      Serial.print ("You just pressed: A      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
+      i2cWrite(Front_Left,   MediumSpeed,   Backward  );
+      i2cWrite(Front_Right,  MediumSpeed,   Forward   );
+      i2cWrite(Back_Left,    MediumSpeed,   Forward   );
+      i2cWrite(Back_Right,   MediumSpeed,   Backward  );
+    }
+    else if (SerialInput == 100)               // D was pressed. Go right
+    {
+      Serial.print ("You just pressed: D      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
+      i2cWrite(Front_Left,   MediumSpeed,   Forward   );
+      i2cWrite(Front_Right,  MediumSpeed,   Backward  );
+      i2cWrite(Back_Left,    MediumSpeed,   Backward  );
+      i2cWrite(Back_Right,   MediumSpeed,   Forward   );
+    }
+    else if (SerialInput == 120)               // X was pressed. STOP!
+    {
+      Serial.print ("You just pressed: X      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
+      i2cWrite(Front_Left,   Stop,   Forward   );
+      i2cWrite(Front_Right,  Stop,   Forward  );
+      i2cWrite(Back_Left,    Stop,   Forward  );
+      i2cWrite(Back_Right,   Stop,   Forward   );
+    }
+    else {
+      Serial.println ("Invalid Input!!");
+    }
   }
-  delay(14);
-  COUNTS = ReadOne(PIC_Address >> 1);
-  Serial.print("COUNTS =      ");   Serial.print(COUNTS);  Serial.println(",");
 }
 
+void i2cWrite ( char Address, char Speed , char Direction)
+{
+    Wire.beginTransmission(Address >> 1 );
+    Wire.write((byte)0);
+    Wire.write((byte)Speed);
+    Wire.write((byte)Direction);
+    Wire.endTransmission();
+}
 
 int ReadOne(char address) {                               // pass in the motor you want to read
   unsigned int encoder[2] = {0,0};

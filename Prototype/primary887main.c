@@ -5,8 +5,7 @@
  *			 ````` Use for Prototype robot `````````
  * The function of this code is to receive i2cSpeed and i2cDirection from the Arduino
  * and execute it. PID and encoder counts will not be taken into account for this code
- *
- * Note: Motor will not start until a 1 is pass as i2cDirection. 
+ * 
  */
 
 #include <pic16f887.h>          // 16F887 header file, for all
@@ -24,7 +23,8 @@
   // NOTE:  MCLRE must be set to ON because of this family of PIC (887.
   //  Must be used in conjunction with the MCLR pin via weak pullup.
   //  See section 14.2.2, page 211, of the 887 datasheet.
-__CONFIG(FOSC_HS & WDTE_OFF & PWRTE_ON & MCLRE_ON &
+
+__CONFIG(FOSC_HS & WDTE_OFF & PWRTE_OFF & MCLRE_ON &
         CP_OFF & CPD_OFF & BOREN_OFF & IESO_OFF & FCMEN_OFF & LVP_OFF);
 __CONFIG(BOR4V_BOR40V & WRT_OFF);
 
@@ -39,7 +39,7 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 // Motor 3:  Back Left.  Address = 0x06.  Forward = 0.
 // Motor 4:  Front Left.  Address = 0x08.  Forward = 0.
 
-#define I2C_ADDRESS 0x02        // I2C address; unique to specific PIC
+#define I2C_ADDRESS 0x08        // I2C address; unique to specific PIC
 #define FORWARD 1               // PIC specific depending on wheel orientation
 #define BACKWARD !FORWARD       // ^
 
@@ -207,14 +207,14 @@ void Initialise()
     GIE = 1;				// Enable all interrupts
 
 /****** This is to ensure that the robot will wait until the user/computer is ready. Program wont actually start until Arduion send a 1 to i2cDirection ****/
-	while(1)  //waits until TMR2IF = 1
-    {
-        if(i2cDirection != 0)    //repeatedly test overflow flag
-        {
-            FLAG = 0;             //clear flag
-            break;                  //exit loop
-        }
-    }	
+//	while(1)  //waits until TMR2IF = 1
+//    {
+//        if(i2cDirection != 0)    //repeatedly test overflow flag
+//        {
+//            FLAG = 0;             //clear flag
+//            break;                  //exit loop
+//        }
+//    }	
 /***************************************************************************/
 
     BeginEncoder();         // initialize encoder registers (TMR0 & TMR1)
