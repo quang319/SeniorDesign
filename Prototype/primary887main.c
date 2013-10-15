@@ -5,6 +5,11 @@
  *			 ````` Use for Prototype robot `````````
  * The function of this code is to receive i2cSpeed and i2cDirection from the Arduino
  * and execute it. PID and encoder counts will not be taken into account for this code
+ *
+ *
+ *			/////// Future Work /////////
+ * Need to work on error code for PORTD. Right now, LEDs from PORTD doesn't 
+ * have any meaning. 
  * 
  */
 
@@ -43,11 +48,6 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 #define FORWARD 1               // PIC specific depending on wheel orientation
 #define BACKWARD !FORWARD       // ^
 
-
-#define CYCLES_PER_REV 650      // Should be nearly the same for all PICs,
-                                //  but again could vary across motors
-#define PWM_FOR_RPS 125         // The PWM pulse width that is the closest
-                                //  for achieving 1 revolution per second
 #define FLAG_ADDRESS 0xAA       // Address for user defined flag register
                                 //  According to datasheet, 0xAA is free
 #define KP 3.0                  // PID P coefficient
@@ -68,18 +68,23 @@ int abs(int a, int b);          // Returns the absolute value of the difference
 
 //Test Functions
 void delay(int length);
-void CalcPulse(int speed);
 void delay1sec();
 
 
 
 //Global Variables
 int TARGET = 0;                 // target speed passed down from CPU
-int DIRECTION = FORWARD;       // target derection passed down from CPU
+int DIRECTION = FORWARD;       	// target derection passed down from CPU
 int DIR_READ = FORWARD;         // value read from encoder flip-flop used
                                 //  to keep track of current direction
 
 int COUNTS = 0;                 // TMR1 encoder counts --> passed to CPU
+									// Note: As you are reading through the code,
+									// know that COUNTS is different from counts.
+									// COUNTS is what will be passing to the CPU 
+									// and is used for the odometry.
+									// counts is the variable used to store
+									// encoder over a long period of time.
 
 
 // Register that holds flags that are set in software upon determination of
@@ -109,14 +114,14 @@ int main()
 {
 	
 	// Variables for PID
-    int 	counts 	= 0;                // number of counts since last PID loop
-    int    	ERROR 	= 0;                // error variable
-    int		ACC_ERROR = 0;                // integral variable
-    int		D;                          // differential variable
+    int 	counts 	= 0;                	// number of counts since last PID loop
+    int    	ERROR 	= 0;                	// error variable
+    int		ACC_ERROR = 0;                	// integral variable
+    int		D;                         	 	// differential variable
     int		PREV_ERROR= 0;                  // old error variable
-    int		PID;                        // sum of P, I, and D values
-
-    int currentPWM = 0;             // current pulse width pushed to PWM
+    int		PID;                        	// sum of P, I, and D values
+	
+    int currentPWM = 0;             		// current pulse width pushed to PWM
 
     // BEGIN
     Initialise();
@@ -126,12 +131,13 @@ int main()
         {
             // Perform some I2C operation
             // If read, reset Data and PID information
-            // Perform operation for TARGET and TMR0_OverflowTarget here
+            // Perform operation for TARGET
 
             TARGET = i2cSpeed;
             setDirection(i2cDirection);
             SetPulse(i2cSpeed);
 
+			// Reset the variables for PID and odometry //
             COUNTS = 0;
             ACC_ERROR = 0;
             D = 0;
@@ -144,10 +150,10 @@ int main()
         if (F.DIR == 1)
         {
             // Update counts before updating direction
-            EncUpdate(&counts);		//This will put the value of TMR1 into counts and then clear TMR1
+            EncUpdate(&counts);				//This will put the value of TMR1 into counts and then clear TMR1
 			COUNTS = currentPWM;			//Quang: Send back PID data for graphing and tuning
 			
-//            UpdateData(counts);		// This will add counts to COUNTS (which is the total distanced traveled so far.
+//            UpdateData(counts);			// This will add counts to COUNTS (which is the total distanced traveled so far.
 
             // Update direction
             DIR_READ = RB5;
@@ -168,16 +174,18 @@ int main()
            	ERROR = TARGET - counts;
             ACC_ERROR = ACC_ERROR + ERROR;
 
+			// Set bounds for the accumulated error ///
             if (ACC_ERROR > 200)
                 ACC_ERROR = 200;
             else if (ACC_ERROR < -200)
                 ACC_ERROR = -200;
 
+			// determining PID
 //            D = abs(P, P_old);              // calculate differential error
             PID = (ERROR * KP) + (ACC_ERROR * KI);// + (D * KD);   // calculate new output
             PREV_ERROR = ERROR;                      // save error for next time
 
-            if (ERROR != 0)
+            if (ERROR != 0)					// If no error   
             {
 //                currentPWM = PID + 65;
 //                SetPulse(currentPWM);       // set new PWM
