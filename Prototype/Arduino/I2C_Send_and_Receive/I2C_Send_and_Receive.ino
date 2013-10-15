@@ -5,34 +5,7 @@
 		DESIGN - Josh Galicic
 		PRIORITY - Required - Neccessary for communicating between PC and Pics.
 	
-		--------OVERVIEW--------
-This code allow the arduino to subscribe to the i2cSend topic (as well as others) and send these
-i2c requests to the specified pics. The i2c message type allows for 2 bytes of data and an address.
-Filling these fields out will let the arduino handle the rest in the i2c callback.
-
-This code also allows the arduino to request encoder data from the pics and send it back up on the
-/encoderData topic. This happens on a timer1 interrupt (line 80) currently set to 2 seconds.
-There is also code and hardware for the arduino to read the battery voltage and send it back to insure
-that the battery is not drained too low.
-
-
-		--------FUTURE WORK--------
-the 2 second request rate for encoder data is waaaaaaaaaay too low to provide useful position data.
-Ideally, we should be able to request this data every ~100ms. testing will have to be done to see
-if this is possible (make sure the arduino can leave the interrupt before it occurs again).
-
-The battery voltage code is not currently implemented, but it has been verified as working correctly.
-It is connected to a voltage divider on the regulator board to limit it to the 5 volt range. Refine
-the conversion factor from analog input to battery voltage, because it isnt super accurate, maybe
-look into a better voltage and/or current sensor to can provide more usable data.
-
-Sending code has been verified as stable, and should give no issues, the pin 13 led will go high
-whenever the arduino is sending or receiving i2c data. If you every see that light being constantly on,
-it means that something on the bus is probably holding the clk line low, blocking all communication.
-This can happen when reprogramming the PICs, so probably just reset power to the boards and hit the reset
-button on the arduino. the serial bridge will survive an arduino reset, so that can keep going without
-issue. 
-
+\
 */
 
 #define Front_Left   0x02
@@ -57,9 +30,13 @@ int ReadOne(char address);
 int SerialInput = 0;    // This variable is used to stored the value of the keyboard button that was press
                                     // if SerialInput = 119 , that mean go forward
                                     // if SerialInput = 115 , that mean go backward
-                                    // if SerialInput = 97 , that mean strafe left
+                                    // if SerialInput = 97  , that mean strafe left
                                     // if SerialInput = 100 , that mean strafe right
                                     // if SerialInput = 120 , that mean STOP!!
+                                    // if SerialInput = 49  , that mean SlowSpeed
+                                    // if SerialInput = 50  , that mean MediumSpeed
+                                    // if SerialInput = 51  , that mean FastSpeed
+int RobotSpeed = MediumSpeed;
 int COUNTS = 0;         // This will contain the number of counts per loop. NOT the total distance
 int i2cDirection = 0, i2cSpeed = 0;   // for incoming serial data
 
@@ -80,35 +57,35 @@ void loop()
     if (SerialInput == 119)                    // W was pressed. Go forward
     {
       Serial.print ("You just pressed: W      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
-      i2cWrite(Front_Left,   MediumSpeed,   Forward  );
-      i2cWrite(Front_Right,  MediumSpeed,   Forward  );
-      i2cWrite(Back_Left,    MediumSpeed,   Forward  );
-      i2cWrite(Back_Right,   MediumSpeed,   Forward  );
+      i2cWrite(Front_Left,   RobotSpeed,   Forward  );
+      i2cWrite(Front_Right,  RobotSpeed,   Forward  );
+      i2cWrite(Back_Left,    RobotSpeed,   Forward  );
+      i2cWrite(Back_Right,   RobotSpeed,   Forward  );
       
     }
     else if (SerialInput == 115)               // S was pressed. Go backward
     {
       Serial.print ("You just pressed: S      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
-      i2cWrite(Front_Left,   MediumSpeed,   Backward  );
-      i2cWrite(Front_Right,  MediumSpeed,   Backward  );
-      i2cWrite(Back_Left,    MediumSpeed,   Backward  );
-      i2cWrite(Back_Right,   MediumSpeed,   Backward  );
+      i2cWrite(Front_Left,   RobotSpeed,   Backward  );
+      i2cWrite(Front_Right,  RobotSpeed,   Backward  );
+      i2cWrite(Back_Left,    RobotSpeed,   Backward  );
+      i2cWrite(Back_Right,   RobotSpeed,   Backward  );
     }
     else if (SerialInput == 97)               // A was pressed. Go left
     {
       Serial.print ("You just pressed: A      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
-      i2cWrite(Front_Left,   MediumSpeed,   Backward  );
-      i2cWrite(Front_Right,  MediumSpeed,   Forward   );
-      i2cWrite(Back_Left,    MediumSpeed,   Forward   );
-      i2cWrite(Back_Right,   MediumSpeed,   Backward  );
+      i2cWrite(Front_Left,   RobotSpeed,   Backward  );
+      i2cWrite(Front_Right,  RobotSpeed,   Forward   );
+      i2cWrite(Back_Left,    RobotSpeed,   Forward   );
+      i2cWrite(Back_Right,   RobotSpeed,   Backward  );
     }
     else if (SerialInput == 100)               // D was pressed. Go right
     {
       Serial.print ("You just pressed: D      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
-      i2cWrite(Front_Left,   MediumSpeed,   Forward   );
-      i2cWrite(Front_Right,  MediumSpeed,   Backward  );
-      i2cWrite(Back_Left,    MediumSpeed,   Backward  );
-      i2cWrite(Back_Right,   MediumSpeed,   Forward   );
+      i2cWrite(Front_Left,   RobotSpeed,   Forward   );
+      i2cWrite(Front_Right,  RobotSpeed,   Backward  );
+      i2cWrite(Back_Left,    RobotSpeed,   Backward  );
+      i2cWrite(Back_Right,   RobotSpeed,   Forward   );
     }
     else if (SerialInput == 120)               // X was pressed. STOP!
     {
@@ -117,6 +94,18 @@ void loop()
       i2cWrite(Front_Right,  Stop,   Forward  );
       i2cWrite(Back_Left,    Stop,   Forward  );
       i2cWrite(Back_Right,   Stop,   Forward   );
+    }
+    else if (SerialInput == 49)
+    {
+      RobotSpeed = SlowSpeed;
+    }
+    else if (SerialInput == 50)
+    {
+      RobotSpeed = MediumSpeed;
+    }
+    else if (SerialInput == 51)
+    {
+      RobotSpeed = FastSpeed;
     }
     else {
       Serial.println ("Invalid Input!!");
