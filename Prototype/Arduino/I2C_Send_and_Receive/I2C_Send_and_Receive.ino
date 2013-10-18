@@ -9,12 +9,13 @@
 */
 
 #define Front_Left   0x02
-#define Front_Right  0x08
-#define Back_Left    0x06
-#define Back_Right   0x05
+#define Front_Right  0x04
+#define Back_Right   0x06
+#define Back_Left    0x08
 
-#define Forward      0x01
-#define Backward     0x00
+
+#define Forward      0x00
+#define Backward     0x01
 
 #define SlowSpeed    100
 #define MediumSpeed  175
@@ -28,21 +29,26 @@
 int ReadOne(char address);
 
 int SerialInput = 0;    // This variable is used to stored the value of the keyboard button that was press
-                                    // if SerialInput = 119 , that mean go forward
-                                    // if SerialInput = 115 , that mean go backward
-                                    // if SerialInput = 97  , that mean strafe left
-                                    // if SerialInput = 100 , that mean strafe right
+                                    // if SerialInput = 119 , W , that mean go forward
+                                    // if SerialInput = 115 , S , that mean go backward
+                                    // if SerialInput = 97  , A , that mean strafe left
+                                    // if SerialInput = 100 , D , that mean strafe right
+                                    // if SerialInput = 113 , Q , that mean left diagonal forward
+                                    // if SerialInput = 101 , E , that mean right diagonal forward
+                                    // if SerialInput = 114 , R , that mean rotate left
+                                    // if SerialInput = 116 , T , that mean rotate right
                                     // if SerialInput = 120 , that mean STOP!!
                                     // if SerialInput = 49  , that mean SlowSpeed
                                     // if SerialInput = 50  , that mean MediumSpeed
                                     // if SerialInput = 51  , that mean FastSpeed
+                                    
 int RobotSpeed = MediumSpeed;
 int COUNTS = 0;         // This will contain the number of counts per loop. NOT the total distance
 int i2cDirection = 0, i2cSpeed = 0;   // for incoming serial data
 
 void setup(){
   Wire.begin(); // join i2c bus
-  Serial.begin(9600);
+  Serial.begin(4800);
   pinMode(13, OUTPUT);
   Serial.print ("Press W to go forward.               "); Serial.println ("Press S to go backward");
   Serial.print ("Press A to strafe left.              "); Serial.println ("Press D to strafe right");
@@ -86,6 +92,38 @@ void loop()
       i2cWrite(Front_Right,  RobotSpeed,   Backward  );
       i2cWrite(Back_Left,    RobotSpeed,   Backward  );
       i2cWrite(Back_Right,   RobotSpeed,   Forward   );
+    }
+    else if (SerialInput == 113)               // Q was pressed. Left Diagonal!
+    {
+      Serial.print ("You just pressed: Q      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
+      i2cWrite(Front_Left,   Stop,   Forward   );
+      i2cWrite(Front_Right,  RobotSpeed,   Forward  );
+      i2cWrite(Back_Left,    RobotSpeed,   Forward  );
+      i2cWrite(Back_Right,   Stop,   Forward   );
+    }
+    else if (SerialInput == 101)               // E was pressed. Right Diagonal!
+    {
+      Serial.print ("You just pressed: E      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
+      i2cWrite(Front_Left,   RobotSpeed,   Forward   );
+      i2cWrite(Front_Right,  Stop,   Forward  );
+      i2cWrite(Back_Left,    Stop,   Forward  );
+      i2cWrite(Back_Right,   RobotSpeed,   Forward   );
+    }
+    else if (SerialInput == 114)               // R was pressed. Rotate Left!
+    {
+      Serial.print ("You just pressed: R      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
+      i2cWrite(Front_Left,   RobotSpeed,   Backward   );
+      i2cWrite(Front_Right,  RobotSpeed,   Forward    );
+      i2cWrite(Back_Left,    RobotSpeed,   Backward   );
+      i2cWrite(Back_Right,   RobotSpeed,   Forward    );
+    }
+    else if (SerialInput == 116)               // T was pressed. Rotate Right!
+    {
+      Serial.print ("You just pressed: Q      Value of SerialInput is   "); Serial.println(SerialInput);        //For debugging
+      i2cWrite(Front_Left,   RobotSpeed,   Forward   );
+      i2cWrite(Front_Right,  RobotSpeed,   Backward  );
+      i2cWrite(Back_Left,    RobotSpeed,   Forward   );
+      i2cWrite(Back_Right,   RobotSpeed,   Backward  );
     }
     else if (SerialInput == 120)               // X was pressed. STOP!
     {

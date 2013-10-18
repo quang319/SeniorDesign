@@ -2,14 +2,6 @@
  * GCRobotics
  * Created 10/14/2013
  * 
- *			 ````` Use for Prototype robot `````````
- * The function of this code is to receive i2cSpeed and i2cDirection from the Arduino
- * and execute it. PID and encoder counts will not be taken into account for this code
- *
- *
- *			/////// Future Work /////////
- * Need to work on error code for PORTD. Right now, LEDs from PORTD doesn't 
- * have any meaning. 
  * 
  */
 
@@ -17,7 +9,7 @@
                                 //  processor-specific declarations
 #include <htc.h>                // htc.h necessary for PIC16F917 Configuration
                                 //  Bit Settings
-        #ifndef _XTAL_FREQ
+	#ifndef _XTAL_FREQ
 	#define _XTAL_FREQ 	20000000
 	#endif
 
@@ -33,7 +25,7 @@
   //  Must be used in conjunction with the MCLR pin via weak pullup.
   //  See section 14.2.2, page 211, of the 887 datasheet.
 
-__CONFIG(FOSC_HS & WDTE_OFF & PWRTE_OFF & MCLRE_ON &
+__CONFIG(FOSC_HS & WDTE_OFF & PWRTE_ON & MCLRE_ON &
         CP_OFF & CPD_OFF & BOREN_OFF & IESO_OFF & FCMEN_OFF & LVP_OFF);
 __CONFIG(BOR4V_BOR40V & WRT_OFF);
 
@@ -48,12 +40,12 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 // Motor 3:  Back Left.  Address = 0x06.  Forward = 0.
 // Motor 4:  Front Left.  Address = 0x08.  Forward = 0.
 
-#define I2C_ADDRESS 0x02        // I2C address; unique to specific PIC
+#define I2C_ADDRESS 0x08        // I2C address; unique to specific PIC
 #define FORWARD 1               // PIC specific depending on wheel orientation
 #define BACKWARD !FORWARD       // ^
 
 #define FLAG_ADDRESS 0xAA       // Address for user defined flag register
-                                //  According sto datasheet, 0xAA is free
+                                //  According to datasheet, 0xAA is free
 #define KP 3.0                  // PID P coefficient
 #define KI 0.4                  // PID I coefficient
 #define KD 0                    // PID D coefficient
@@ -131,9 +123,7 @@ int main()
     Initialise();
     while(1)
     {
-   //            __delay_ms(500);
 		PORTD = 0xFF;							// Clear error flag
- 
         if (F.I2C == 1)
         {
             // Perform some I2C operation
@@ -201,8 +191,15 @@ int main()
 
             F.T0 = 0;                   // reset TMR0 flag
         } // end PID Loop               */
-    //        __delay_ms(500);
-            PORTD = 0x00;							// Clear error flag
+
+		SetPulse(80);
+		__delay_ms(2000);
+		SetPulse(140);
+		__delay_ms(2000);
+		SetPulse(200);
+		__delay_ms(2000);
+		SetPulse(240);
+		__delay_ms(2000);
 
     } // end while(1)
 
@@ -217,22 +214,13 @@ void Initialise()
     FLAG = 0;
 	BeginPWM();             // initialize PWM associated registers
 	SetPulse(0);			// Set PWM to 0 until Arduino say otherwise
-	i2cInit(I2C_ADDRESS);   // initialize I2C
+	
+	__delay_ms(10);			// let motor settle
+
 	PEIE = 1;               // generic peripheral interrupts enabled
-    PIE1 = 0b00001000;      // I2C interrupts enabled
+    PIE1 = 0b00000000;      // I2C interrupts disable
  	SSPIF = 0;				// Clear I2C flag
     GIE = 1;				// Enable all interrupts
-
-/****** This is to ensure that the robot will wait until the user/computer is ready. Program wont actually start until Arduion send a 1 to i2cDirection ****/
-//	while(1)  //waits until TMR2IF = 1
-//    {
-//        if(i2cDirection != 0)    //repeatedly test overflow flag
-//        {
-//            FLAG = 0;             //clear flag
-//            break;                  //exit loop
-//        }
-//    }	
-/***************************************************************************/
 
     BeginEncoder();         // initialize encoder registers (TMR0 & TMR1)
     PIE2 = 0;               // other peripherals disabled
@@ -242,8 +230,7 @@ void Initialise()
 	TMR0 = 0;
     // Configure interrupts
     RBIE = 1;               // PORTB interrupts enabled
-    T0IE = 0;               // TMR0 interrupts enabled
-                                    // Need to re-enable
+    T0IE = 1;               // TMR0 interrupts enabled
 	TMR1IE = 1;				// TMR1 interrupts enabled
 
     // Clear flags
@@ -253,7 +240,7 @@ void Initialise()
     // Enable all interrupts
 
 
-    TRISB = 0b11110111;
+    TRISB = 0b11111111;
     PORTBbits.RB3 = FORWARD;    // default to forward
 
     TRISD = 0;
@@ -268,6 +255,8 @@ void interrupt isr()
     {	
 		PORTD = 0x01;			// I2C error indicator: Got stuck in interrupt isr
 	
+		__delay_ms(1000);		// We should never enter this
+
         F.I2C = 1;              // set i2c flag bit
         i2cIsrHandler();		// interrupt flag was cleared in this function
     } else if (T0IF == 1)       // overflow of timer 0
