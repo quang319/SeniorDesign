@@ -3,7 +3,7 @@
  * Created 10/14/2013
  * 
  *			 ````` Use for Prototype robot `````````
- * The function of this code is to receive i2cSpeed and i2cDirection from the Arduino
+ * The function of this code is to receive i2cTarget and i2cDirection from the Arduino
  * and execute it. PID and encoder counts will not be taken into account for this code
  *
  *
@@ -22,9 +22,9 @@
 	#endif
 
 #include "pwmlib887.h"             // allows for use of PWM module
-                                //  (use double quotes for user-defined)
+                                   //  (use double quotes for user-defined)
 #include "enclib887.h"             // allows for use of Encoder module
-#include "i2cSlave887.h"             // allows for use of I2C module
+#include "i2cSlave887.h"            // allows for use of I2C module
 
 // Configuration bit settings
 // Use 20MHz external oscillator --> FOSC_HS
@@ -48,9 +48,20 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 // Motor 3:  Back Left.  Address = 0x06.  Forward = 0.
 // Motor 4:  Front Left.  Address = 0x08.  Forward = 0.
 
-#define I2C_ADDRESS 0x02        // I2C address; unique to specific PIC
+/***************** I2C address; unique to specific PIC ******************/
+#define I2C_ADDRESS 0x02        // FRONT LEFT motor address
+//#define I2C_ADDRESS 0x04        // FRONT RIGHT motor address
+//#define I2C_ADDRESS 0x06        // BACK RIGHT motor address
+//#define I2C_ADDRESS 0x08        // BACK LEFT motor address
+/************************************************************************/
+/****************  Motor direction: This changes depends on the side of the motor ***
+#define DIRECTION i2cDirection  
+//#define DIRECTION !i2cDirection
+*************************************************************************/
 #define FORWARD 1               // PIC specific depending on wheel orientation
 #define BACKWARD !FORWARD       // ^
+#define PWM_OFFSET 85           // Motor won't spin until a certain voltage is applied
+                                // to it.
 
 #define FLAG_ADDRESS 0xAA       // Address for user defined flag register
                                 //  According sto datasheet, 0xAA is free
@@ -67,28 +78,27 @@ void interrupt isr();           // general interrupt vector
 void UpdateData(int c);         // takes in most recent count measurements and
                                 //  adds them to current total
 void setDirection(int dir);     // Sets the direction bit (PORTB bit 3)
-int abs(int a, int b);          // Returns the absolute value of the difference
-                                //  between two numbers
-
-//Test Functions
-void delay(int length);
-void delay1sec();
-
 
 
 //Global Variables
-int TARGET = 0;                 // target speed passed down from CPU
-int DIRECTION = FORWARD;       	// target derection passed down from CPU
-int DIR_READ = FORWARD;         // value read from encoder flip-flop used
-                                //  to keep track of current direction
+int TARGET          = 0;                // target speed passed down from CPU
+int DIRECTION       = FORWARD;       	// target derection passed down from CPU
+int DIR_READ        = FORWARD;          // value read from encoder flip-flop used
+                                            //  to keep track of current direction
+int currentPWM  = 0;       		// current pulse width pushed to PWM
+int TMR0_OVERFLOW   = 0;                // This will keep track of the number of times that
+                                            // TMR0 has overflowed.
+                                            // TMR0 is set to overflow at 10 ms so
+                                            // 10 times of TMR0 overflow equal to 100 ms or 0.1 second.
+                                            // This is how often our PID will run
 
-int COUNTS = 0;                 // TMR1 encoder counts --> passed to CPU
-									// Note: As you are reading through the code,
-									// know that COUNTS is different from counts.
-									// COUNTS is what will be passing to the CPU 
-									// and is used for the odometry.
-									// counts is the variable used to store
-									// encoder over a long period of time.
+int COUNTS          = 0;                 // TMR1 encoder counts --> passed to CPU
+                                            // Note: As you are reading through the code,
+                                            // know that COUNTS is different from counts.
+                                            // COUNTS is what will be passing to the CPU
+                                            // and is used for the odometry.
+                                            // counts is the variable used to store
+                                            // encoder over a long period of time.
 
 
 // Register that holds flags that are set in software upon determination of
@@ -118,37 +128,31 @@ int main()
 {
 	
 	// Variables for PID
-    int 	counts 	= 0;                	// number of counts since last PID loop
-    int    	ERROR 	= 0;                	// error variable
-    int		ACC_ERROR = 0;                	// integral variable
-    int		D;                         	 	// differential variable
-    int		PREV_ERROR= 0;                  // old error variable
-    int		PID;                        	// sum of P, I, and D values
-	
-    int currentPWM = 0;             		// current pulse width pushed to PWM
+    int 	counts      = 0;               	// number of counts since last PID loop
+    int    	ERROR       = 0;               	// error variable
+    int		ACC_ERROR   = 0;              	// integral variable
+    int         PID         = 0;                                    // sum of P, I, and D values
+
 
     // BEGIN
     Initialise();
     while(1)
     {
-   //            __delay_ms(500);
-		PORTD = 0xFF;							// Clear error flag
- 
+		PORTD = 0xFF;               // Have Flag bits on just to indicate
+                                            // that PIC is running
         if (F.I2C == 1)
         {
             // Perform some I2C operation
             // If read, reset Data and PID information
             // Perform operation for TARGET
 
-            TARGET = i2cSpeed;
-            setDirection(!i2cDirection);
-            SetPulse(i2cSpeed);
-
+            TARGET = i2cTarget;
+            setDirection(DIRECTION);
+ //           SetPulse(i2cTarget);         // Need to remove this later on.
+                                                // This will only make motor jerky
 			// Reset the variables for PID and odometry //
             COUNTS = 0;
             ACC_ERROR = 0;
-            D = 0;
-            PREV_ERROR = 0;
 
             // Clear Flag
             F.I2C = 0;
@@ -157,10 +161,8 @@ int main()
         if (F.DIR == 1)
         {
             // Update counts before updating direction
-            EncUpdate(&counts);				//This will put the value of TMR1 into counts and then clear TMR1
-			COUNTS = currentPWM;			//Quang: Send back PID data for graphing and tuning
-			
-//            UpdateData(counts);			// This will add counts to COUNTS (which is the total distanced traveled so far.
+            EncUpdate(&counts);				//This will put the value of TMR1 into counts and then clear TMR0
+//            UpdateData(counts);			// This will add counts to COUNTS (which is the total distanced traveled so far.)
 
             // Update direction
             DIR_READ = RB5;
@@ -174,11 +176,11 @@ int main()
         {
             // Update to most recent encoder counts
             EncUpdate(&counts);
-			COUNTS = currentPWM;			// Quang: Send back PID data for graphing and tuning
+            COUNTS = counts;			// Quang: Send back PID data for graphing and tuning
  //           UpdateData(counts);		
 
             // Perform PID
-           	ERROR = TARGET - counts;
+            ERROR = TARGET - counts;
             ACC_ERROR = ACC_ERROR + ERROR;
 
 			// Set bounds for the accumulated error ///
@@ -187,22 +189,21 @@ int main()
             else if (ACC_ERROR < -200)
                 ACC_ERROR = -200;
 
-			// determining PID
-//            D = abs(P, P_old);              // calculate differential error
-            PID = (ERROR * KP) + (ACC_ERROR * KI);// + (D * KD);   // calculate new output
-            PREV_ERROR = ERROR;                      // save error for next time
-
-            if (ERROR != 0)					// If no error   
+            PID = (ERROR * KP) + (ACC_ERROR * KI);     // Performing PID calculation
+                                                        //Note: Even through the variable types are
+                                                        // different, the result should be the correct
+                                                        // value of with the type of int
+            if (ERROR != 0)         // If no error
             {
-//                currentPWM = PID + 65;
+//                currentPWM = PID + PWM_OFFSET;
+//                if (currentPWM >= 255)
+//                    currentPWM = 255;
 //                SetPulse(currentPWM);       // set new PWM
             }
 
 
             F.T0 = 0;                   // reset TMR0 flag
-        } // end PID Loop               */
-    //        __delay_ms(500);
-            PORTD = 0x00;							// Clear error flag
+        } // end PID Loop               */						// Clear error flag
 
     } // end while(1)
 
@@ -215,31 +216,20 @@ int main()
 void Initialise()
 {
     FLAG = 0;
-	BeginPWM();             // initialize PWM associated registers
-	SetPulse(0);			// Set PWM to 0 until Arduino say otherwise
-	i2cInit(I2C_ADDRESS);   // initialize I2C
-	PEIE = 1;               // generic peripheral interrupts enabled
+    BeginPWM();             // initialize PWM associated registers
+    SetPulse(0);			// Set PWM to 0 until Arduino say otherwise
+    i2cInit(I2C_ADDRESS);   // initialize I2C
+    PEIE = 1;               // generic peripheral interrupts enabled
     PIE1 = 0b00001000;      // I2C interrupts enabled
- 	SSPIF = 0;				// Clear I2C flag
+    SSPIF = 0;				// Clear I2C flag
     GIE = 1;				// Enable all interrupts
-
-/****** This is to ensure that the robot will wait until the user/computer is ready. Program wont actually start until Arduion send a 1 to i2cDirection ****/
-//	while(1)  //waits until TMR2IF = 1
-//    {
-//        if(i2cDirection != 0)    //repeatedly test overflow flag
-//        {
-//            FLAG = 0;             //clear flag
-//            break;                  //exit loop
-//        }
-//    }	
-/***************************************************************************/
 
     BeginEncoder();         // initialize encoder registers (TMR0 & TMR1)
     PIE2 = 0;               // other peripherals disabled
 
-	// Clear all TIMER registers
+	// Clear and Initate TIMER registers
 	TMR1 = 0;
-	TMR0 = 0;
+	TMR0 = 61;
     // Configure interrupts
     RBIE = 1;               // PORTB interrupts enabled
     T0IE = 0;               // TMR0 interrupts enabled
@@ -271,9 +261,12 @@ void interrupt isr()
         F.I2C = 1;              // set i2c flag bit
         i2cIsrHandler();		// interrupt flag was cleared in this function
     } else if (T0IF == 1)       // overflow of timer 0
-    {
-        // TMR0 overflows every 13.11 ms
-        F.T0 = 1;				// set T0 flag bit
+    {                           // TMR0 overflows every 10 ms
+        TMR0_OVERFLOW++;
+        if (TMR0_OVERFLOW == 10){   // 10 times of TMR0 overflow = 100 ms or 0.1 second
+            F.T0 = 1;				// set T0 flag bit
+            TMR0_OVERFLOW = 0;
+        }
         T0IF = 0;
     } else if (TMR1IF == 1)     // overflow of counts; probably never happens
     {		// Only 2 bytes of data are being sent through I2C so therefore, the 
@@ -323,29 +316,3 @@ void setDirection(int dir)
     else
         PORTBbits.RB3 = FORWARD;        // default to motor forward
 }
-
-
-// Returns the absolute value of the difference between two numbers
-int abs(int a, int b)
-{
-    int temp;
-    temp = a - b;
-    if (temp < 0)
-        temp = temp * -1;
-    return temp;
-}
-
-
-void delay1sec()
-{
-    int i;
-    // Loop 76 times for 1 second delay (20MHz, 256 prescale)
-    for(i = 0; i <= 76; i++)
-    {
-        while (T0IF == 0)
-            asm("nop");
-        T0IF = 0;
-    }
-}
-
-

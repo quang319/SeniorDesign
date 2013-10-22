@@ -12,8 +12,8 @@
 char i2cBufferVal;
 char i2cBuffer[3];
 char i2cRequest;
-char i2cSpeed;
-char i2cDirection;
+char i2cTarget;
+char i2cDirection = 0;
 char i2cWriteInt;  // value that determines whether or not the upper or lower
                    //  byte of an integer will be passed to SSPBUF
 
