@@ -49,15 +49,15 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 // Motor 4:  Front Left.  Address = 0x08.  Forward = 0.
 
 /***************** I2C address; unique to specific PIC ******************/
-#define I2C_ADDRESS 0x02        // FRONT LEFT motor address
+//#define I2C_ADDRESS 0x02        // FRONT LEFT motor address
 //#define I2C_ADDRESS 0x04        // FRONT RIGHT motor address
 //#define I2C_ADDRESS 0x06        // BACK RIGHT motor address
-//#define I2C_ADDRESS 0x08        // BACK LEFT motor address
+#define I2C_ADDRESS 0x08        // BACK LEFT motor address
 /************************************************************************/
-/****************  Motor direction: This changes depends on the side of the motor ***
-#define DIRECTION i2cDirection  
-//#define DIRECTION !i2cDirection
-*************************************************************************/
+/****************  Motor direction: This changes depends on the side of the motor ****/
+//#define MOTOR_DIRECTION i2cDirection
+#define MOTOR_DIRECTION !i2cDirection
+/*************************************************************************/
 #define FORWARD 1               // PIC specific depending on wheel orientation
 #define BACKWARD !FORWARD       // ^
 #define PWM_OFFSET 85           // Motor won't spin until a certain voltage is applied
@@ -85,7 +85,6 @@ int TARGET          = 0;                // target speed passed down from CPU
 int DIRECTION       = FORWARD;       	// target derection passed down from CPU
 int DIR_READ        = FORWARD;          // value read from encoder flip-flop used
                                             //  to keep track of current direction
-int currentPWM  = 0;       		// current pulse width pushed to PWM
 int TMR0_OVERFLOW   = 0;                // This will keep track of the number of times that
                                             // TMR0 has overflowed.
                                             // TMR0 is set to overflow at 10 ms so
@@ -133,7 +132,7 @@ int main()
     int		ACC_ERROR   = 0;              	// integral variable
     int         PID         = 0;                                    // sum of P, I, and D values
 
-
+//    int currentPWM  = 0;       		// current pulse width pushed to PWM
     // BEGIN
     Initialise();
     while(1)
@@ -147,8 +146,8 @@ int main()
             // Perform operation for TARGET
 
             TARGET = i2cTarget;
-            setDirection(DIRECTION);
- //           SetPulse(i2cTarget);         // Need to remove this later on.
+            setDirection(MOTOR_DIRECTION);
+            SetPulse(i2cTarget);         // Need to remove this later on.
                                                 // This will only make motor jerky
 			// Reset the variables for PID and odometry //
             COUNTS = 0;
@@ -176,8 +175,8 @@ int main()
         {
             // Update to most recent encoder counts
             EncUpdate(&counts);
-            COUNTS = counts;			// Quang: Send back PID data for graphing and tuning
- //           UpdateData(counts);		
+ //           COUNTS = counts;			// Quang: Send back PID data for graphing and tuning
+            UpdateData(counts);		
 
             // Perform PID
             ERROR = TARGET - counts;
@@ -232,7 +231,7 @@ void Initialise()
 	TMR0 = 61;
     // Configure interrupts
     RBIE = 1;               // PORTB interrupts enabled
-    T0IE = 0;               // TMR0 interrupts enabled
+    T0IE = 1;               // TMR0 interrupts enabled
                                     // Need to re-enable
 	TMR1IE = 1;				// TMR1 interrupts enabled
 

@@ -37,14 +37,16 @@ int SerialInput = 0;    // This variable is used to stored the value of the keyb
                                     // if SerialInput = 101 , E , that mean right diagonal forward
                                     // if SerialInput = 114 , R , that mean rotate left
                                     // if SerialInput = 116 , T , that mean rotate right
-                                    // if SerialInput = 120 , that mean STOP!!
-                                    // if SerialInput = 49  , that mean SlowSpeed
-                                    // if SerialInput = 50  , that mean MediumSpeed
-                                    // if SerialInput = 51  , that mean FastSpeed
+                                    // if SerialInput = 120 , X , that mean STOP!!
+                                    // if SerialInput = 49  , 1 , that mean SlowSpeed
+                                    // if SerialInput = 50  , 2 , that mean MediumSpeed
+                                    // if SerialInput = 51  , 3 , that mean FastSpeed
+                                    // if SerialInput = 99  , C , that mean RECORD ODEMETRY
                                     
 int RobotSpeed = MediumSpeed;
 int COUNTS = 0;         // This will contain the number of counts per loop. NOT the total distance
 int i2cDirection = 0, i2cSpeed = 0;   // for incoming serial data
+int ODOM1 = 0, ODOM2 = 0, ODOM3 = 0, ODOM4 = 0;
 
 void setup(){
   Wire.begin(); // join i2c bus
@@ -133,18 +135,27 @@ void loop()
       i2cWrite(Back_Left,    Stop,   Forward  );
       i2cWrite(Back_Right,   Stop,   Forward   );
     }
-    else if (SerialInput == 49)
+    else if (SerialInput == 49)              // 1 was pressed, SLOW
     {
       RobotSpeed = SlowSpeed;
     }
-    else if (SerialInput == 50)
+    else if (SerialInput == 50)              // 2 was pressed, MEDIUM
     {
       RobotSpeed = MediumSpeed;
     }
-    else if (SerialInput == 51)
+    else if (SerialInput == 51)              // 3 was pressed, FAST
     {
       RobotSpeed = FastSpeed;
     }
+   else if (SerialInput == 99)
+   {
+     ODOM1 = ReadOne (Front_Left);
+     ODOM2 = ReadOne (Front_Right);
+     ODOM3 = ReadOne (Back_Right);
+     ODOM4 = ReadOne (Back_Left);
+     Serial.print("ODOM1:    "); Serial.print(ODOM1); Serial.print("              ODOM2:    "); Serial.println(ODOM2);
+     Serial.print("ODOM3:    "); Serial.print(ODOM3); Serial.print("              ODOM4:    "); Serial.println(ODOM4);
+   }
     else {
       Serial.println ("Invalid Input!!");
     }
@@ -163,7 +174,7 @@ void i2cWrite ( char Address, char Speed , char Direction)
 int ReadOne(char address) {                               // pass in the motor you want to read
   unsigned int encoder[2] = {0,0};
   int encoderCountTotal = 0;
-  Wire.requestFrom(address, 2);    // request 2 bytes from address
+  Wire.requestFrom(address >>1 , 2);    // request 2 bytes from address
    int i = 0;
   while(Wire.available())   // slave may send less than requested
   { 

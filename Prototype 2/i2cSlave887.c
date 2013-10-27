@@ -33,9 +33,11 @@
 #include <pic16f887.h>
 
 extern int COUNTS;          // load from primary887main.c
-
-
-
+extern int PID;
+extern int TARGET;
+extern int counts;
+extern int ERROR;
+extern int ACC_ERROR;
 void i2cInit(char address){
 
     TRISC3 = 1;
@@ -86,16 +88,27 @@ void i2cIsrHandler(){
         if (i2cWriteInt == 0)
         {
             i2cWriteInt = 1;
-//            i2cSend(currentPWM);
-            i2cSend(COUNTS);          //Commented this out for now for testing
+            i2cSend(ACC_ERROR);          //Commented this out for now for testing
         }
 	
     } else if ((SSPSTAT & 0b00100100) == 0b00100100){ // D_A high,R_W high, read w/ data in buffer
 		// The send char of the message is being sent though 
- 		if (i2cWriteInt == 1)
+        if (i2cWriteInt == 1)
+        {
+            i2cWriteInt = 2;
+//            i2cWriteInt = 0;
+            i2cSend(ACC_ERROR >> 8);
+            //            i2cSend(COUNTS >> 8);     //Commented this out for now for testing
+        }
+        else if (i2cWriteInt == 2)
+        {
+            i2cWriteInt = 3;
+            i2cSend(counts);
+        }
+        else if (i2cWriteInt == 3)
         {
             i2cWriteInt = 0;
-            i2cSend(COUNTS >> 8);     //Commented this out for now for testing
+            i2cSend(PID);
         }
     }else
 	{
@@ -108,6 +121,7 @@ void i2cIsrHandler(){
     if (i2cBufferVal >= 3){
         i2cBufferVal = 0;
         i2cDataUpdate();
+//        ACC_ERROR = 0;
     }
 }
 
