@@ -38,6 +38,8 @@ extern int TARGET;
 extern int counts;
 extern int ERROR;
 extern int ACC_ERROR;
+extern double KP;
+extern double KI;
 void i2cInit(char address){
 
     TRISC3 = 1;
@@ -127,8 +129,21 @@ void i2cIsrHandler(){
 
 
 void i2cDataUpdate(){
-    i2cTarget = (i2cBuffer[1]);
-    i2cDirection = (i2cBuffer[2]);
+    if (i2cBuffer[0] == 0)
+    {
+        i2cTarget = (i2cBuffer[1]);
+        i2cDirection = (i2cBuffer[2]);
+    }
+    else if (i2cBuffer[0] == 1)
+        KP += 0.1;
+    else if (i2cBuffer[0] == 2)
+        KP -= 0.1;
+    else if (i2cBuffer[0] == 3)
+        KI += 0.1;
+    else if (i2cBuffer[0] == 4)
+        KI -= 0.1;
+    else if (i2cBuffer[0] == 5)
+        ACC_ERROR = 0;
 }
 
 // See Data Sheet page 208 for Slave Send instructions

@@ -65,10 +65,10 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 
 #define FLAG_ADDRESS 0xAA       // Address for user defined flag register
                                 //  According sto datasheet, 0xAA is free
-#define KP 2.0                  // PID P coefficient
-#define KI 0.8                  // PID I coefficient
-#define KD 0                    // PID D coefficient
-#define KPID 1.0                // PID cycle/s to PWM dampening factor
+//#define KP 2.0                  // PID P coefficient
+//#define KI 0.8                  // PID I coefficient
+//#define KD 0                    // PID D coefficient
+//#define KPID 1.0                // PID cycle/s to PWM dampening factor
 
 
 
@@ -103,6 +103,9 @@ int COUNTS          = 0;                 // TMR1 encoder counts --> passed to CP
     int    	ERROR       = 0;               	// error variable
     int		ACC_ERROR   = 0;              	// integral variable
     int         currentPWM  = 0;       		// current pulse width pushed to PWM
+double   KP        = 2.2;
+double   KI        = 0.0;
+
 
 // Register that holds flags that are set in software upon determination of
 //  the cause of an interrupt.  These flags are continuously checked in the
@@ -129,7 +132,7 @@ union {
 // MAIN STARTS HERE -----------------------------------------------------------
 int main()
 {
-	
+
 	// Variables for PID
 
     // BEGIN
