@@ -1,4 +1,8 @@
-
+/********************************************
+* Author: Quang Nguyen 
+*
+*
+*********************************************/
 //#define PIC_ADDRESS   0x02
 #define PIC_ADDRESS   0x04
 //#define PIC_ADDRESS   0x06
