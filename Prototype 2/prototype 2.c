@@ -58,10 +58,13 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 #define MOTOR_DIRECTION i2cDirection
 //#define MOTOR_DIRECTION !i2cDirection
 /*************************************************************************/
-#define FORWARD 1               // PIC specific depending on wheel orientation
-#define BACKWARD !FORWARD       // ^
-#define PWM_OFFSET 60           // Motor won't spin until a certain voltage is applied
+#define FORWARD     1               // PIC specific depending on wheel orientation
+#define BACKWARD    !FORWARD       // ^
+#define PWM_OFFSET  60           // Motor won't spin until a certain voltage is applied
                                 // to it.
+#define DT          0.1         // Delta Time
+#define INVERSE_DT  10.0
+#define TC          0.0         // Critical Period
 
 #define FLAG_ADDRESS 0xAA       // Address for user defined flag register
                                 //  According sto datasheet, 0xAA is free
@@ -102,10 +105,12 @@ int COUNTS          = 0;                 // TMR1 encoder counts --> passed to CP
     int 	counts      = 0;               	// number of counts since last PID loop
     int    	ERROR       = 0;               	// error variable
     int		ACC_ERROR   = 0;              	// integral variable
+    int         DELTA_ERROR = 0;
+    int         PREVIOUS_ERROR =0;
     int         currentPWM  = 0;       		// current pulse width pushed to PWM
-double   KP        = 2.2;
-double   KI        = 0.6;
-
+double   KP        = 2;
+double   KI        = 1;
+double   KD        = 1.5;
 
 // Register that holds flags that are set in software upon determination of
 //  the cause of an interrupt.  These flags are continuously checked in the
@@ -182,6 +187,8 @@ int main()
             // Perform PID
             ERROR = TARGET - counts;
             ACC_ERROR = ACC_ERROR + ERROR;
+            DELTA_ERROR = ERROR - PREVIOUS_ERROR;
+            PREVIOUS_ERROR = ERROR;
 
 			// Set bounds for the accumulated error ///
             if (ACC_ERROR > 10000)
@@ -189,7 +196,7 @@ int main()
             else if (ACC_ERROR < -10000)
                 ACC_ERROR = -10000;
 
-            PID = (ERROR * KP) + (ACC_ERROR * KI);     // Performing PID calculation
+            PID = (ERROR * KP) + (ACC_ERROR * KI) + (DELTA_ERROR * KD );     // Performing PID calculation
                                                         //Note: Even through the variable types are
                                                         // different, the result should be the correct
                                                         // value of with the type of int

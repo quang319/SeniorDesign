@@ -27,7 +27,7 @@
 
 #define SlowSpeed    40
 #define MediumSpeed  90
-#define FastSpeed    130
+#define FastSpeed    120
 #define Stop         00
 #define TIME_LOOP    110
 
@@ -40,14 +40,17 @@ void CLEAR(char address);
 void CLEAR_ACC_ERROR (char address);
 void KP_UPDATE (char address, double TARGET);
 void KI_UPDATE (char address, double TARGET);
+void KP_UPDATE (char address, double TARGET);
 void EXCEL_PRINT(char address);
 
 /************** PID VARIABLES **********************/
-double KP_CURRENT = 2.2;
-double KI_CURRENT = 0.6;
+double KP_CURRENT = 2;
+double KI_CURRENT = 1;
+double KD_CURRENT = 1.2;
 
-double KP_TARGET [3] = {2.1,2.2,2.0};
-double KI_TARGET [3] = {1,1,1};
+double KP_TARGET [3] = {2,2,2};
+double KI_TARGET [3] = {.7,1,1};
+double KD_TARGET [3] = {1,.7,1};
 
 /****************************************************/
 
@@ -74,10 +77,11 @@ void loop()
 { 
 
 ////////////////// Graph TARGET [0] //////////  
-  KP_UPDATE(PIC_ADDRESS, KP_TARGET[0] );
-  KI_UPDATE(PIC_ADDRESS, KI_TARGET[0] );
+//  KP_UPDATE(PIC_ADDRESS, KP_TARGET[0] );
+//  KI_UPDATE(PIC_ADDRESS, KI_TARGET[0] );
+//  KD_UPDATE(PIC_ADDRESS, KD_TARGET[0] );
   i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );
-  Serial.println("CLEARDATA"); Serial.println("LABEL,TIME, KP, KI, LOOP,COUNTS,PID,ACC_ERR");
+  Serial.println("CLEARDATA"); Serial.println("LABEL,TIME, KP, KI, KD, LOOP,COUNTS,PID,ACC_ERR");
   for (int f = 0; f <= 20; f++){
     TIME = TIME_LOOP * f;
     EXCEL_PRINT(PIC_ADDRESS);
@@ -85,10 +89,12 @@ void loop()
   }
   CLEAR(PIC_ADDRESS);
 ////////////////// Graph TARGET [1] /////////
-  KP_UPDATE(PIC_ADDRESS, KP_TARGET[1] );
-  KI_UPDATE(PIC_ADDRESS, KI_TARGET[1] );
+//  KP_UPDATE(PIC_ADDRESS, KP_TARGET[1] );
+//  KI_UPDATE(PIC_ADDRESS, KI_TARGET[1] );
+//  KD_UPDATE(PIC_ADDRESS, KD_TARGET[1] );
   
     Serial.print("DATA,TIME,");                     // Indicate the start of a new set of data
+    Serial.print(0); Serial.print(",");
     Serial.print(0); Serial.print(",");
     Serial.print(0); Serial.print(",");
     Serial.print(0); Serial.print(","); 
@@ -106,8 +112,10 @@ void loop()
   ////////////////// Graph TARGET [2] /////////
   KP_UPDATE(PIC_ADDRESS, KP_TARGET[2] );
   KI_UPDATE(PIC_ADDRESS, KI_TARGET[2] );
+  KD_UPDATE(PIC_ADDRESS, KD_TARGET[2] );
   
     Serial.print("DATA,TIME,");                     // Indicate the start of a new set of data
+    Serial.print(0); Serial.print(",");
     Serial.print(0); Serial.print(",");
     Serial.print(0); Serial.print(",");
     Serial.print(0); Serial.print(","); 
@@ -162,9 +170,9 @@ void KP_UPDATE(char address, double TARGET)
 {
   int temp = 0;
   if (TARGET > KP_CURRENT)
-    temp = (TARGET - KP_CURRENT)*10.0;
+    temp = round((TARGET - KP_CURRENT)*10.0);
   else if (TARGET < KP_CURRENT)
-    temp = (KP_CURRENT - TARGET)*10.0;
+    temp = round((KP_CURRENT - TARGET)*10.0);
   else 
     temp = 0;
     
@@ -194,9 +202,9 @@ void KI_UPDATE(char address, double TARGET)
 {
   int temp = 0;
   if (TARGET > KI_CURRENT)
-    temp = ((TARGET - KI_CURRENT)+0.05)*10.0;
+    temp = round((TARGET - KI_CURRENT)*10.0);
   else if (TARGET < KI_CURRENT)
-    temp = ((KI_CURRENT - TARGET)+0.05)*10.0;
+    temp = round((KI_CURRENT - TARGET)*10.0);
   else 
     temp = 0;
     
@@ -221,6 +229,37 @@ void KI_UPDATE(char address, double TARGET)
   }
 }
 
+void KD_UPDATE(char address, double TARGET)
+{
+  int temp = 0;
+  if (TARGET > KD_CURRENT)
+    temp = round((TARGET - KD_CURRENT)*10.0);
+  else if (TARGET < KD_CURRENT)
+    temp = round((KD_CURRENT - TARGET)*10.0);
+  else 
+    temp = 0;
+    
+  for (int j = 0; j < temp; j++)
+  {
+    if (KD_CURRENT < TARGET){
+    Wire.beginTransmission(address >> 1 );
+    Wire.write((byte)5);
+    Wire.write((byte)0);
+    Wire.write((byte)0);
+    Wire.endTransmission();
+      KD_CURRENT += 0.1;
+    }
+    if (KD_CURRENT > TARGET) {
+    Wire.beginTransmission(address >> 1 );
+    Wire.write((byte)6);
+    Wire.write((byte)0);
+    Wire.write((byte)0);
+    Wire.endTransmission();
+      KD_CURRENT -= 0.1;
+    }
+  }
+}
+
 void CLEAR(char address)
 {
   i2cWrite(address,   0,   Forward  );
@@ -230,7 +269,7 @@ void CLEAR(char address)
 void CLEAR_ACC_ERROR (char address)
 {
   Wire.beginTransmission(address >> 1 ); // Clear ACC_ERR
-  Wire.write((byte)5);
+  Wire.write((byte)7);
   Wire.write((byte)0);
   Wire.write((byte)0);
   Wire.endTransmission();
@@ -241,6 +280,7 @@ void EXCEL_PRINT(char address)
     Serial.print("DATA,TIME,");
     Serial.print(KP_CURRENT); Serial.print(",");
     Serial.print(KI_CURRENT); Serial.print(",");
+    Serial.print(KD_CURRENT); Serial.print(",");
     Serial.print(TIME)      ; Serial.print(","); 
     Serial.print(COUNTS)    ; Serial.print(","); 
     Serial.print(PID)       ; Serial.print(","); 
