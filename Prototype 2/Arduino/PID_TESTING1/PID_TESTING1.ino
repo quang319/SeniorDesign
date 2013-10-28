@@ -1,6 +1,19 @@
 /********************************************
 * Author: Quang Nguyen 
+* Date  : 10/27/2013
 *
+* Direction: 
+*  This program was written to be used with PLX-DAQ for tuning the PID constants.
+*  Inorder to use this program, you must first set the value of KP_CURRENT and 
+*  KI_CURRENT to the current value of KP and KI that is being used in the PIC. 
+*  You should then input the desirable testing values of KP and KI in 
+*  KP_TARGET and KI_TARGET. The program will test and graph the system 
+*  at each of the value for KP and KI. 
+*  Upon given power to the Arduino, you have 4 seconds to connect to the 
+*  PLX-DAQ and to turn on the robot. Assuming that you have done everything correctly,
+*  your excel file should be populated with incoming data from the arduino. This is the
+*  result of your PID. You can graph these data points to better understand the reaction
+*  that KP and KI have on the system. 
 *
 *********************************************/
 //#define PIC_ADDRESS   0x02
@@ -24,16 +37,17 @@
 
 void ReadOne(char address);
 void CLEAR(char address);
+void CLEAR_ACC_ERROR (char address);
 void KP_UPDATE (char address, double TARGET);
 void KI_UPDATE (char address, double TARGET);
 void EXCEL_PRINT(char address);
 
 /************** PID VARIABLES **********************/
-double KP_CURRENT = 0;
-double KI_CURRENT = 0;
+double KP_CURRENT = 2.2;
+double KI_CURRENT = 0.6;
 
-double KP_TARGET [3] = {0,0,0};
-double KI_TARGET [5] = {0,0,0};
+double KP_TARGET [3] = {2.1,2.2,2.0};
+double KI_TARGET [3] = {1,1,1};
 
 /****************************************************/
 
@@ -64,7 +78,7 @@ void loop()
   KI_UPDATE(PIC_ADDRESS, KI_TARGET[0] );
   i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );
   Serial.println("CLEARDATA"); Serial.println("LABEL,TIME, KP, KI, LOOP,COUNTS,PID,ACC_ERR");
-  for (int f = 0; f <= 39; f++){
+  for (int f = 0; f <= 20; f++){
     TIME = TIME_LOOP * f;
     EXCEL_PRINT(PIC_ADDRESS);
     delay(TIME_LOOP);
@@ -81,8 +95,8 @@ void loop()
     Serial.print(0); Serial.print(","); 
     Serial.print(0); Serial.print(","); 
     Serial.print(0); Serial.println(",");
-    
-  for (int f = 0; f <= 39; f++){
+  i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );  
+  for (int f = 0; f <= 20; f++){
     TIME = TIME_LOOP * f;
     EXCEL_PRINT(PIC_ADDRESS);
     delay(TIME_LOOP);
@@ -100,8 +114,8 @@ void loop()
     Serial.print(0); Serial.print(","); 
     Serial.print(0); Serial.print(","); 
     Serial.print(0); Serial.println(",");
-    
-  for (int f = 0; f <= 39; f++){
+  i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );
+  for (int f = 0; f <= 20; f++){
     TIME = TIME_LOOP * f;
     EXCEL_PRINT(PIC_ADDRESS);
     delay(TIME_LOOP);
@@ -146,15 +160,23 @@ void ReadOne(char address) {                               // pass in the motor 
 
 void KP_UPDATE(char address, double TARGET)
 {
-  while (TARGET != KP_CURRENT)
+  int temp = 0;
+  if (TARGET > KP_CURRENT)
+    temp = (TARGET - KP_CURRENT)*10.0;
+  else if (TARGET < KP_CURRENT)
+    temp = (KP_CURRENT - TARGET)*10.0;
+  else 
+    temp = 0;
+    
+  for (int j = 0; j < temp; j++)
   {
-    if (KI_CURRENT < TARGET){
+    if (KP_CURRENT < TARGET){
     Wire.beginTransmission(address >> 1 );
     Wire.write((byte)1);
     Wire.write((byte)0);
     Wire.write((byte)0);
     Wire.endTransmission();
-      KP_CURRENT += 0.1;
+    KP_CURRENT += 0.1;
     }
     if (KP_CURRENT > TARGET) {
     Wire.beginTransmission(address >> 1 );
@@ -164,12 +186,21 @@ void KP_UPDATE(char address, double TARGET)
     Wire.endTransmission();
       KP_CURRENT -= 0.1;
     }
+    delay(100);
   }
 }
 
 void KI_UPDATE(char address, double TARGET)
 {
-  while (TARGET != KI_CURRENT)
+  int temp = 0;
+  if (TARGET > KI_CURRENT)
+    temp = ((TARGET - KI_CURRENT)+0.05)*10.0;
+  else if (TARGET < KI_CURRENT)
+    temp = ((KI_CURRENT - TARGET)+0.05)*10.0;
+  else 
+    temp = 0;
+    
+  for (int j = 0; j < temp; j++)
   {
     if (KI_CURRENT < TARGET){
     Wire.beginTransmission(address >> 1 );
@@ -193,12 +224,11 @@ void KI_UPDATE(char address, double TARGET)
 void CLEAR(char address)
 {
   i2cWrite(address,   0,   Forward  );
-  Wire.beginTransmission(address >> 1 ); // Clear ACC_ERR
-  Wire.write((byte)5);
-  Wire.write((byte)0);
-  Wire.write((byte)0);
-  Wire.endTransmission();
-  delay(300);                            // Wait for motor to fully stop
+  delay(2000);
+  CLEAR_ACC_ERROR (address);
+}
+void CLEAR_ACC_ERROR (char address)
+{
   Wire.beginTransmission(address >> 1 ); // Clear ACC_ERR
   Wire.write((byte)5);
   Wire.write((byte)0);

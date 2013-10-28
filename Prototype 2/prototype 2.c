@@ -104,7 +104,7 @@ int COUNTS          = 0;                 // TMR1 encoder counts --> passed to CP
     int		ACC_ERROR   = 0;              	// integral variable
     int         currentPWM  = 0;       		// current pulse width pushed to PWM
 double   KP        = 2.2;
-double   KI        = 0.0;
+double   KI        = 0.6;
 
 
 // Register that holds flags that are set in software upon determination of
