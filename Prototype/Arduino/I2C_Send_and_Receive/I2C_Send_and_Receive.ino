@@ -8,18 +8,18 @@
 \
 */
 
-#define Front_Left   0x02
-#define Front_Right  0x04
-#define Back_Right   0x06
-#define Back_Left    0x08
+#define Front_Left   0x08
+#define Front_Right  0x02
+#define Back_Right   0x04
+#define Back_Left    0x06
 
 
 #define Forward      0x00
 #define Backward     0x01
 
-#define SlowSpeed    100
-#define MediumSpeed  175
-#define FastSpeed    225
+#define SlowSpeed    30
+#define MediumSpeed  50
+#define FastSpeed    60
 #define Stop         00
 
 #include <ArduinoHardware.h>

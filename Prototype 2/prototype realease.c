@@ -49,10 +49,10 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 // Motor 4:  Front Left.  Address = 0x08.  Forward = 0.
 
 /***************** I2C address; unique to specific PIC ******************/
-//#define I2C_ADDRESS 0x02        // FRONT LEFT motor address
-#define I2C_ADDRESS 0x04        // FRONT RIGHT motor address
-//#define I2C_ADDRESS 0x06        // BACK RIGHT motor address
-//#define I2C_ADDRESS 0x08        // BACK LEFT motor address
+//#define I2C_ADDRESS 0x02        // FRONT RIGHT motor address
+#define I2C_ADDRESS 0x04        // BACK RIGHT motor address
+//#define I2C_ADDRESS 0x06        // BACK LEFT motor address
+//#define I2C_ADDRESS 0x08        // FRONT LEFT motor address
 /************************************************************************/
 /****************  Motor direction: This changes depends on the side of the motor ****/
 #define MOTOR_DIRECTION i2cDirection
@@ -108,6 +108,7 @@ int COUNTS          = 0;                 // TMR1 encoder counts --> passed to CP
     int         DELTA_ERROR = 0;
     int         PREVIOUS_ERROR =0;
     int         currentPWM  = 0;       		// current pulse width pushed to PWM
+    
 double   KP        = 3.5;
 double   KI        = 1.7;
 double   KD        = 2;
@@ -168,7 +169,7 @@ int main()
         {
             // Update counts before updating direction
             EncUpdate(&counts);				//This will put the value of TMR1 into counts and then clear TMR0
-//            UpdateData(counts);			// This will add counts to COUNTS (which is the total distanced traveled so far.)
+            UpdateData(counts);			// This will add counts to COUNTS (which is the total distanced traveled so far.)
 
             // Update direction
             DIR_READ = RB5;

@@ -91,27 +91,15 @@ void i2cIsrHandler(){
         if (i2cWriteInt == 0)
         {
             i2cWriteInt = 1;
-            i2cSend(ACC_ERROR);          //Commented this out for now for testing
+            i2cSend(COUNTS);        
         }
 	
     } else if ((SSPSTAT & 0b00100100) == 0b00100100){ // D_A high,R_W high, read w/ data in buffer
 		// The send char of the message is being sent though 
         if (i2cWriteInt == 1)
         {
-            i2cWriteInt = 2;
-//            i2cWriteInt = 0;
-            i2cSend(ACC_ERROR >> 8);
-            //            i2cSend(COUNTS >> 8);     //Commented this out for now for testing
-        }
-        else if (i2cWriteInt == 2)
-        {
-            i2cWriteInt = 3;
-            i2cSend(counts);
-        }
-        else if (i2cWriteInt == 3)
-        {
             i2cWriteInt = 0;
-            i2cSend(PID);
+            i2cSend(COUNTS >> 8);
         }
     }else
 	{

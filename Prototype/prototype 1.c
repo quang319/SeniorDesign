@@ -49,10 +49,10 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 // Motor 4:  Front Left.  Address = 0x08.  Forward = 0.
 
 /***************** I2C address; unique to specific PIC ******************/
-//#define I2C_ADDRESS 0x02        // FRONT LEFT motor address
-//#define I2C_ADDRESS 0x04        // FRONT RIGHT motor address
-//#define I2C_ADDRESS 0x06        // BACK RIGHT motor address
-#define I2C_ADDRESS 0x08        // BACK LEFT motor address
+//#define I2C_ADDRESS 0x02        // FRONT RIGHT motor address
+//#define I2C_ADDRESS 0x04        // BACK RIGHT motor address
+//#define I2C_ADDRESS 0x06        // BACK LEFT motor address
+#define I2C_ADDRESS 0x08        // FRONT LEFT motor address
 /************************************************************************/
 /****************  Motor direction: This changes depends on the side of the motor ****/
 //#define MOTOR_DIRECTION i2cDirection
