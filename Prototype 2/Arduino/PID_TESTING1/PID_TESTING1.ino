@@ -25,11 +25,11 @@
 #define Forward      0x00
 #define Backward     0x01
 
-#define SlowSpeed    40
-#define MediumSpeed  90
-#define FastSpeed    120
+#define SlowSpeed    20
+#define MediumSpeed  50
+#define FastSpeed    60
 #define Stop         00
-#define TIME_LOOP    110
+#define TIME_LOOP    60
 
 #include <ArduinoHardware.h>
 #include <Wire.h>
@@ -44,19 +44,19 @@ void KP_UPDATE (char address, double TARGET);
 void EXCEL_PRINT(char address);
 
 /************** PID VARIABLES **********************/
-double KP_CURRENT = 2;
-double KI_CURRENT = 1;
-double KD_CURRENT = 1.2;
+double KP_CURRENT = 3;
+double KI_CURRENT = 1.8;
+double KD_CURRENT = 2;
 
-double KP_TARGET [3] = {2,2,2};
-double KI_TARGET [3] = {.7,1,1};
-double KD_TARGET [3] = {1,.7,1};
+double KP_TARGET [3] = {3.5,3.5,3.5};
+double KI_TARGET [3] = {1.8,1.7,1.7};
+double KD_TARGET [3] = {2,2,2};
 
 /****************************************************/
 
 int SerialInput = 0;    // This variable is used to stored the value of the keyboard button that was press
                                     
-int RobotSpeed = MediumSpeed;
+int RobotSpeed = FastSpeed;
 int COUNTS = 0;         // This will contain the number of counts per loop. NOT the total distance
 int PID    = 0;
 int ACC_ERR= 0;
@@ -76,22 +76,22 @@ void setup(){
 void loop()
 { 
 
-////////////////// Graph TARGET [0] //////////  
+//////////////// Graph TARGET [0] //////////  
 //  KP_UPDATE(PIC_ADDRESS, KP_TARGET[0] );
 //  KI_UPDATE(PIC_ADDRESS, KI_TARGET[0] );
 //  KD_UPDATE(PIC_ADDRESS, KD_TARGET[0] );
   i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );
   Serial.println("CLEARDATA"); Serial.println("LABEL,TIME, KP, KI, KD, LOOP,COUNTS,PID,ACC_ERR");
-  for (int f = 0; f <= 20; f++){
+  for (int f = 0; f <= 35; f++){
     TIME = TIME_LOOP * f;
     EXCEL_PRINT(PIC_ADDRESS);
     delay(TIME_LOOP);
   }
   CLEAR(PIC_ADDRESS);
 ////////////////// Graph TARGET [1] /////////
-//  KP_UPDATE(PIC_ADDRESS, KP_TARGET[1] );
-//  KI_UPDATE(PIC_ADDRESS, KI_TARGET[1] );
-//  KD_UPDATE(PIC_ADDRESS, KD_TARGET[1] );
+  KP_UPDATE(PIC_ADDRESS, KP_TARGET[1] );
+  KI_UPDATE(PIC_ADDRESS, KI_TARGET[1] );
+  KD_UPDATE(PIC_ADDRESS, KD_TARGET[1] );
   
     Serial.print("DATA,TIME,");                     // Indicate the start of a new set of data
     Serial.print(0); Serial.print(",");
@@ -102,7 +102,7 @@ void loop()
     Serial.print(0); Serial.print(","); 
     Serial.print(0); Serial.println(",");
   i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );  
-  for (int f = 0; f <= 20; f++){
+  for (int f = 0; f <= 35; f++){
     TIME = TIME_LOOP * f;
     EXCEL_PRINT(PIC_ADDRESS);
     delay(TIME_LOOP);
@@ -123,7 +123,7 @@ void loop()
     Serial.print(0); Serial.print(","); 
     Serial.print(0); Serial.println(",");
   i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );
-  for (int f = 0; f <= 20; f++){
+  for (int f = 0; f <= 35; f++){
     TIME = TIME_LOOP * f;
     EXCEL_PRINT(PIC_ADDRESS);
     delay(TIME_LOOP);

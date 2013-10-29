@@ -60,7 +60,7 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 /*************************************************************************/
 #define FORWARD     1               // PIC specific depending on wheel orientation
 #define BACKWARD    !FORWARD       // ^
-#define PWM_OFFSET  60           // Motor won't spin until a certain voltage is applied
+#define PWM_OFFSET  40           // Motor won't spin until a certain voltage is applied
                                 // to it.
 #define DT          0.1         // Delta Time
 #define INVERSE_DT  10.0
@@ -108,9 +108,9 @@ int COUNTS          = 0;                 // TMR1 encoder counts --> passed to CP
     int         DELTA_ERROR = 0;
     int         PREVIOUS_ERROR =0;
     int         currentPWM  = 0;       		// current pulse width pushed to PWM
-double   KP        = 2;
-double   KI        = 1;
-double   KD        = 1.5;
+double   KP        = 3.5;
+double   KI        = 1.7;
+double   KD        = 2;
 
 // Register that holds flags that are set in software upon determination of
 //  the cause of an interrupt.  These flags are continuously checked in the
@@ -269,7 +269,7 @@ void interrupt isr()
     } else if (T0IF == 1)       // overflow of timer 0
     {                           // TMR0 overflows every 10 ms
         TMR0_OVERFLOW++;
-        if (TMR0_OVERFLOW == 10){   // 10 times of TMR0 overflow = 100 ms or 0.1 second
+        if (TMR0_OVERFLOW == 5){   // 10 times of TMR0 overflow = 100 ms or 0.1 second
             F.T0 = 1;				// set T0 flag bit
             TMR0_OVERFLOW = 0;
         }
