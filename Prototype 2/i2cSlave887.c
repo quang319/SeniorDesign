@@ -17,7 +17,7 @@
  *			The last 2 bytes will be stored in i2cTarget and i2cDirection.
  *			
  *			To send data to master, the master should request 2 bytes of data.
- *			COUNTS will be the data that will be sent to the master. It is up 
+ *			OdometryCounts will be the data that will be sent to the master. It is up
  *			to the master to piece 2 bytes back to 1 interger.
  *
  * Timing infomation:
@@ -32,12 +32,12 @@
 #include "i2cSlave887.h"
 #include <pic16f887.h>
 
-extern int COUNTS;          // load from primary887main.c
+extern int OdometryCounts;          // load from primary887main.c
 extern int PID;
-extern int TARGET;
-extern int counts;
-extern int ERROR;
-extern int ACC_ERROR;
+extern int Target;
+extern int EncoderCounts;
+extern int Error;
+extern int AccumulatedError;
 extern double KP;
 extern double KI;
 extern double KD;
@@ -91,7 +91,7 @@ void i2cIsrHandler(){
         if (i2cWriteInt == 0)
         {
             i2cWriteInt = 1;
-            i2cSend(COUNTS);        
+            i2cSend(OdometryCounts);
         }
 	
     } else if ((SSPSTAT & 0b00100100) == 0b00100100){ // D_A high,R_W high, read w/ data in buffer
@@ -99,7 +99,7 @@ void i2cIsrHandler(){
         if (i2cWriteInt == 1)
         {
             i2cWriteInt = 0;
-            i2cSend(COUNTS >> 8);
+            i2cSend(OdometryCounts >> 8);
         }
     }else
 	{
@@ -112,7 +112,7 @@ void i2cIsrHandler(){
     if (i2cBufferVal >= 3){
         i2cBufferVal = 0;
         i2cDataUpdate();
-//        ACC_ERROR = 0;
+//        AccumulatedError = 0;
     }
 }
 
@@ -136,7 +136,7 @@ void i2cDataUpdate(){
     else if (i2cBuffer[0] == 6)
         KD -= 0.1;
     else if (i2cBuffer[0] == 7)
-        ACC_ERROR = 0;
+        AccumulatedError = 0;
 }
 
 // See Data Sheet page 208 for Slave Send instructions

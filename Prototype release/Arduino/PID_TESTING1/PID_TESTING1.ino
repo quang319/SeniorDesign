@@ -1,8 +1,13 @@
 
 //#define PIC_ADDRESS   0x02
-#define PIC_ADDRESS   0x04
+//#define PIC_ADDRESS   0x04
 //#define PIC_ADDRESS   0x06
 //#define PIC_ADDRESS   0x08
+
+#define PIC_ADDRESS1   0x02
+#define PIC_ADDRESS2   0x04
+#define PIC_ADDRESS3   0x06
+#define PIC_ADDRESS4   0x08
 
 
 #define Forward      0x00
@@ -43,31 +48,17 @@ int TIME = 0;
 void setup(){
   Wire.begin(); // join i2c bus
   Serial.begin(9600);
-  pinMode(13, OUTPUT);
-  delay(2000);      
+  pinMode(13, OUTPUT);      
 }
 
 void loop()
 { 
-  i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );
-  RobotSpeed = FastSpeed;
-  COUNTS = ReadOne(PIC_ADDRESS);
-  Serial.print("COUNTS    "); Serial.println(COUNTS);
-  delay(3000);
-  i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );
-  RobotSpeed = SlowSpeed;
-  COUNTS = ReadOne(PIC_ADDRESS);
-  Serial.print("COUNTS    "); Serial.println(COUNTS);
-  delay(3000);
-  i2cWrite(PIC_ADDRESS,   RobotSpeed,   Forward  );
-  RobotSpeed = Stop;
-  COUNTS = ReadOne (PIC_ADDRESS);
-  Serial.print("COUNTS    "); Serial.println(COUNTS);
-  delay(3000);
-  i2cWrite(PIC_ADDRESS,   RobotSpeed,   Backward  );
-  COUNTS = ReadOne (PIC_ADDRESS);
-  Serial.print("COUNTS    "); Serial.println(COUNTS);
-  while(1);
+  i2cWrite(PIC_ADDRESS1,   RobotSpeed,   Forward  );
+  i2cWrite(PIC_ADDRESS2,   RobotSpeed,   Forward  );
+  i2cWrite(PIC_ADDRESS3,   RobotSpeed,   Forward  );
+  i2cWrite(PIC_ADDRESS4,   RobotSpeed,   Forward  );
+  Serial.println("I'm good!");
+  delay(2);
 }
 
 void i2cWrite ( char Address, char Speed , char Direction)
