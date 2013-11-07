@@ -19,7 +19,7 @@
 
 #define SlowSpeed    30
 #define MediumSpeed  50
-#define FastSpeed    60
+#define FastSpeed    70
 #define Stop         00
 
 #include <ArduinoHardware.h>
