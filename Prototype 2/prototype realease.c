@@ -17,6 +17,8 @@
                                 //  processor-specific declarations
 #include <htc.h>                // htc.h necessary for PIC16F917 Configuration
                                 //  Bit Settings
+//#include <stdlib.h>
+
         #ifndef _XTAL_FREQ
 	#define _XTAL_FREQ 	20000000
 	#endif
@@ -43,61 +45,78 @@ __CONFIG(BOR4V_BOR40V & WRT_OFF);
 //  depending on the motor position (front left motor, for example), only
 //  these definitions will need to change
 
-/***************** I2C address; unique to specific PIC ******************/
-//#define I2C_ADDRESS 0x02        // FRONT RIGHT motor address
-//#define I2C_ADDRESS 0x04        // BACK RIGHT motor address
+//************** Right side PICs **************
+/////////////// PIC's address for I2C //////////////////
+ #define I2C_ADDRESS 0x02        // FRONT RIGHT motor address
+ //#define I2C_ADDRESS 0x04        // BACK RIGHT motor addres
+
+/////////////// PIC specific depending on wheel orientation //////////
+ #define MOTOR_DIRECTION i2cDirection
+ #define FORWARD     1
+ #define BACKWARD !FORWARD
+//**********************************************/
+
+/************** Left side PICs **************
+/////////////// PIC's address for I2C //////////////////
 #define I2C_ADDRESS 0x06        // BACK LEFT motor address
 //#define I2C_ADDRESS 0x08        // FRONT LEFT motor address
-/************************************************************************/
-/****************  Motor direction: This changes depends on the side of the motor ****/
-//#define MOTOR_DIRECTION i2cDirection
-#define MOTOR_DIRECTION !i2cDirection
-/*************************************************************************/
-#define FORWARD     1               // PIC specific depending on wheel orientation
-#define BACKWARD    !FORWARD       // ^
+
+/////////////// PIC specific depending on wheel orientation //////////
+//#define MOTOR_DIRECTION !i2cDirection
+ #define FORWARD     0
+ #define BACKWARD !FORWARD
+**********************************************/
+
+
 #define PWM_OFFSET  40           // Motor won't spin until a certain voltage is applied
                                 // to it.
 #define DT          0.1         // Delta Time
-
 #define FLAG_ADDRESS 0xAA       // Address for user defined flag register
                                 //  According sto datasheet, 0xAA is free
-//#define KP 2.0                  // PID P coefficient
-//#define KI 0.8                  // PID I coefficient
-//#define KD 0                    // PID D coefficient
+//#define KP 3.5                  // PID P coefficient
+//#define KI 1.7                  // PID I coefficient
+//#define KD 2                    // PID D coefficient
 //#define KPID 1.0                // PID cycle/s to PWM dampening factor
 
-double   KP        = 3.5;
-double   KI        = 1.7;
-double   KD        = 2;
+//double   KP        = 3.5;
+//double   KI        = 1.7;
+//double   KD        = 2;
+
+double   KP        = 2;
+double   KI        = .7;
+double   KD        = 1;
 
 // Function Prototypes
 void Initialise();              // contains all initializing functions
 void interrupt isr();           // general interrupt vector
-void UpdateData(int c);         // takes in most recent count measurements and
+void updateData(int c);         // takes in most recent count measurements and
                                 //  adds them to current total
 void setDirection(int dir);     // Sets the direction bit (PORTB bit 3)
+void intSecondComplement (int *value);
+void abs (int *value);
 
 
 //Global Variables
-int Target              = 0;                // target speed passed down from CPU
-int Direction           = FORWARD;       	// target derection passed down from CPU
+  int Target              = 0;                // target speed passed down from CPU
+int Direction           = FORWARD;          // target direction passed down from CPU
 int DirectionRead       = FORWARD;          // value read from encoder flip-flop used
                                             //  to keep track of current direction
 int TMR0OverflowCounter   = 0;                // This will keep track of the number of times that
                                             // TMR0 has overflowed.
-                                            // TMR0 is set to overflow at 10 ms so
-                                            // 5 times of TMR0 overflow equal to 100 ms or 0.1 second.
-                                            // This is how often our PID will run
+                                            // TMR0 is set to overflow at 5 ms so
+                                            // 5 times of TMR0 overflow equal to 50 ms or 0.05 second.
+                                            // This is how often our PID loop will run
 
-int OdometryCounts          = 0;           // TMR1 encoder counts --> passed to CPU
+  int OdometryCounts          = 0;           // TMR1 encoder counts --> passed to CPU
                                            
-int PID                 = 0;                // sum of P, I, and D values
-int EncoderCounts       = 0;                // number of counts since last PID loop
-int Error               = 0;                // error variable
-int AccumulatedError    = 0;                // integral variable
-int DeltaError          = 0;
-int PreviousError       =0;
-int CurrentPwm          = 0;                // current pulse width pushed to PWM
+  int PID                 = 0;                // sum of P, I, and D values
+  int EncoderCounts       = 0;                // number of counts since last PID loop
+  int Error               = 0;                // error variable
+  int AccumulatedError    = 0;                // integral variable
+  int DeltaError          = 0;
+  int PreviousError       = 0;
+int        CurrentPwm          = 0;                // current pulse width pushed to PWM
+int        PIDDirectionFlag    = 0;
 
 // Register that holds flags that are set in software upon determination of
 //  the cause of an interrupt.  These flags are continuously checked in the
@@ -124,13 +143,11 @@ union {
 // MAIN STARTS HERE -----------------------------------------------------------
 int main()
 {
-
     // BEGIN
     Initialise();
     while(1)
     {
-		PORTD = 0xFF;               // Have Flag bits on just to indicate
-                                            // that PIC is running
+        PORTD = 0xff;
         if (F.I2C == 1)
         {
             // Perform some I2C operation
@@ -138,11 +155,18 @@ int main()
             // Perform operation for Target
 
             Target = i2cTarget;
+            if ((MOTOR_DIRECTION)== FORWARD)    //MOTOR_DIRECTION: 0 = FORWARD, 1 = BACKWARD
+            {
+                intSecondComplement(&Target);
+            }
             setDirection(MOTOR_DIRECTION);
 			// Reset the variables for PID and odometry //
             OdometryCounts = 0;
-//            AccumulatedError = 0;
-
+            if (i2cTarget == 0)
+            {
+                AccumulatedError = 0;
+                setPWM(0);
+            }
             // Clear Flag
             F.I2C = 0;
         }
@@ -150,10 +174,14 @@ int main()
         {
             // Update counts before updating direction
             EncUpdate(&EncoderCounts);				//This will put the value of TMR1 into counts and then clear TMR0
-            UpdateData(EncoderCounts);			// This will add counts to OdometryCounts (which is the total distanced traveled so far.)
+//            if (PORTBbits.RB5 != FORWARD)
+//            {
+//                intSecondComplement(&EncoderCounts);
+//            }
+            updateData(EncoderCounts);			// This will add counts to OdometryCounts (which is the total distanced traveled so far.)
 
             // Update direction
-            DirectionRead = RB5;
+            DirectionRead = PORTBbits.RB5;
 
             // Clear Flag
             F.DIR = 0;
@@ -164,7 +192,11 @@ int main()
         {
             // Update to most recent encoder counts
             EncUpdate(&EncoderCounts);
-            UpdateData(EncoderCounts);
+            if (PORTBbits.RB5 == FORWARD)   //MOTOR_DIRECTION: 0 = FORWARD, 1 = BACKWARD
+            {
+                intSecondComplement(&EncoderCounts);
+            }
+            updateData(EncoderCounts);
 
             // Perform PID
             Error               = Target - EncoderCounts;
@@ -182,12 +214,23 @@ int main()
                                                         //Note: Even through the variable types are
                                                         // different, the result should be the correct
                                                         // value of with the type of int
+            if ( (PID <0) && (PIDDirectionFlag ==  0))
+            {
+                PIDDirectionFlag = 1;
+                setDirection(PORTBbits.RB5);
+            }
+            if ( (PID >= 0) && (PIDDirectionFlag == 1))
+            {
+                PIDDirectionFlag = 0;
+                setDirection(!PORTBbits.RB5);
+            }
             if (Error != 0)         // If no error
             {
+//                abs(&PID);
                 CurrentPwm = PID + PWM_OFFSET;
                 if (CurrentPwm >= 255)
                     CurrentPwm = 255;
-                SetPulse(CurrentPwm);       // set new PWM
+                setPWM(CurrentPwm);       // set new PWM
  
             }
             F.T0 = 0;                   // reset TMR0 flag
@@ -205,7 +248,7 @@ void Initialise()
 {
     FLAG    = 0;
     BeginPWM();             // initialize PWM associated registers
-    SetPulse(0);			// Set PWM to 0 until Arduino say otherwise
+    setPWM(0);			// Set PWM to 0 until Arduino say otherwise
     i2cInit(I2C_ADDRESS);   // initialize I2C
     PEIE    = 1;               // generic peripheral interrupts enabled
     PIE1    = 0b00001000;      // I2C interrupts enabled
@@ -279,19 +322,14 @@ void interrupt isr()
 
 // Takes in variables holding the most recent time read and count read and adds
 //  (or subtracsts, depending on the direction) those to the current totals
-void UpdateData(int c)
+void updateData(int c)
 {
     // Assuming no overflow occurs in longs
-
-    // Add counts if going forward, subtract if going backwards
-    if (DirectionRead == FORWARD)
-    {
+    // Value of c should already have a sign therefore
+    // we don't need to worry about whether to add or subtract
         OdometryCounts += c;
-    } else
-    {
-        OdometryCounts -= c;
-    }
 }
+
 
 
 // Sets the direction according to the direction value
@@ -303,4 +341,14 @@ void setDirection(int dir)
         PORTBbits.RB3 = BACKWARD;       // reverse
     else
         PORTBbits.RB3 = FORWARD;        // default to motor forward
+}
+void intSecondComplement (int *value)
+{
+    *value = (~(*value))+1;
+}
+
+void abs (int *value)
+{
+    if (*value < 0)
+        intSecondComplement(value);
 }

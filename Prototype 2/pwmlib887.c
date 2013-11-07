@@ -101,7 +101,7 @@ void SetPR2(int length)
 //   If this does not give us the resolution we need, we will have to
 //   add a function that takes "length" and parses the 2 LSBs off in
 //   order to set them.  In other words, it would be harder to implement.
-void SetPulse(int length)
+void setPWM(int length)
 {
     int temp = length;  //set intermediate variable to length value
     if (temp > 255)     //error test length

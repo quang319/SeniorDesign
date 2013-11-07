@@ -32,15 +32,15 @@
 #include "i2cSlave887.h"
 #include <pic16f887.h>
 
-extern int OdometryCounts;          // load from primary887main.c
-extern int PID;
-extern int Target;
-extern int EncoderCounts;
-extern int Error;
-extern int AccumulatedError;
-extern double KP;
-extern double KI;
-extern double KD;
+extern   int OdometryCounts;          // load from primary887main.c
+extern   int PID;
+extern   int Target;
+extern   int EncoderCounts;
+extern   int Error;
+extern   int AccumulatedError;
+//extern double KP;
+//extern double KI;
+//extern double KD;
 void i2cInit(char address){
 
     TRISC3 = 1;
@@ -123,18 +123,18 @@ void i2cDataUpdate(){
         i2cTarget       = (i2cBuffer[1]);
         i2cDirection    = (i2cBuffer[2]);
     }
-    else if (i2cBuffer[0] == 1)
-        KP += 0.1;
-    else if (i2cBuffer[0] == 2)
-        KP -= 0.1;
-    else if (i2cBuffer[0] == 3)
-        KI += 0.1;
-    else if (i2cBuffer[0] == 4)
-        KI -= 0.1;
-    else if (i2cBuffer[0] == 5)
-        KD += 0.1;
-    else if (i2cBuffer[0] == 6)
-        KD -= 0.1;
+//    else if (i2cBuffer[0] == 1)
+//        KP += 0.1;
+//    else if (i2cBuffer[0] == 2)
+//        KP -= 0.1;
+//    else if (i2cBuffer[0] == 3)
+//        KI += 0.1;
+//    else if (i2cBuffer[0] == 4)
+//        KI -= 0.1;
+//    else if (i2cBuffer[0] == 5)
+//        KD += 0.1;
+//    else if (i2cBuffer[0] == 6)
+//        KD -= 0.1;
     else if (i2cBuffer[0] == 7)
         AccumulatedError = 0;
 }

@@ -123,7 +123,13 @@ int main()
     Initialise();
     while(1)
     {
-		PORTD = 0xFF;							// Clear error flag
+        while(1)
+        {
+        PORTBbits.RB3 = FORWARD;
+        SetPulse(150);  
+        PORTD = PORTBbits.RB5;
+        __delay_ms(2000);// Clear error flag
+        }
         if (F.I2C == 1)
         {
             // Perform some I2C operation
@@ -192,14 +198,14 @@ int main()
             F.T0 = 0;                   // reset TMR0 flag
         } // end PID Loop               */
 
-		SetPulse(80);
-		__delay_ms(2000);
-		SetPulse(140);
-		__delay_ms(2000);
-		SetPulse(200);
-		__delay_ms(2000);
-		SetPulse(240);
-		__delay_ms(2000);
+//		SetPulse(80);
+//		__delay_ms(2000);
+//		SetPulse(140);
+//		__delay_ms(2000);
+//		SetPulse(200);
+//		__delay_ms(2000);
+//		SetPulse(240);
+//		__delay_ms(2000);
 
     } // end while(1)
 

@@ -22,7 +22,7 @@ extern "C" {
 
     //Function that sets PWM duty cycle by loading value into
     //CCPR1L and CCP1 bits (of CCP1CON register); 10-bit resolution
-    void SetPulse(int length);
+    void setPWM(int length);
 
     //Function that stops PWM by turning off Timer2
     void StopPWM();
