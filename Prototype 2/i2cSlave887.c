@@ -1,8 +1,12 @@
 /* Alan Hale III	2013/3/18
  * Josh Galicic		2013/3/18
  * GCRobotics
+ * Creator:
+ *              Alan Hale III   3/18/2013
+ *              Josh Galicic    3/18/2013
+ * Revise by:
+ *              Quang Nguyen    10/9/2013
  *
- *			Revised by Quang 10/9/2013
  *  This libary is for setting up and using the PIC I2C protocol
  *	The 2 main functions in this libary are:
  *	 	
@@ -14,6 +18,9 @@
  *			This is function is handle everything else for the I2C.		
  *		
  *			To receive data from master, the master should send 3 bytes of data.
+ *                      The first byte contain the type of the message.
+ *                          There is only 1 type right now. We can definitely expand on this
+ *                          and incorporate other types.
  *			The last 2 bytes will be stored in i2cTarget and i2cDirection.
  *			
  *			To send data to master, the master should request 2 bytes of data.
@@ -33,14 +40,7 @@
 #include <pic16f887.h>
 
 extern   int OdometryCounts;          // load from primary887main.c
-extern   int PID;
-extern   int Target;
-extern   int EncoderCounts;
-extern   int Error;
-extern   int AccumulatedError;
-//extern double KP;
-//extern double KI;
-//extern double KD;
+
 void i2cInit(char address){
 
     TRISC3 = 1;
@@ -87,7 +87,7 @@ void i2cIsrHandler(){
         SSPBUF = 0;
 
     } else if ((SSPSTAT & 0b00100100) == 0b00000100){ // D_A low,R_W high, read w/ addr in buffer
-		// Not sure why, but the first char of data is being sent in this else statement
+		// Not sure why, but the first char of data is being sent in this statement
         if (i2cWriteInt == 0)
         {
             i2cWriteInt = 1;
@@ -95,7 +95,7 @@ void i2cIsrHandler(){
         }
 	
     } else if ((SSPSTAT & 0b00100100) == 0b00100100){ // D_A high,R_W high, read w/ data in buffer
-		// The send char of the message is being sent though 
+		// The second char of the message is being sent though
         if (i2cWriteInt == 1)
         {
             i2cWriteInt = 0;
@@ -103,8 +103,7 @@ void i2cIsrHandler(){
         }
     }else
 	{
-	    i2cSend(0xFF);
-            PORTD = 0xFF;
+            ;
 	}
        
     SSPIF = 0;
@@ -112,31 +111,16 @@ void i2cIsrHandler(){
     if (i2cBufferVal >= 3){
         i2cBufferVal = 0;
         i2cDataUpdate();
-//        AccumulatedError = 0;
     }
 }
 
-
+// This is where the different type can be utilize.
 void i2cDataUpdate(){
-    if (i2cBuffer[0] == 0)
+    if (i2cBuffer[0] == 0)      // There is only one type so far
     {
         i2cTarget       = (i2cBuffer[1]);
         i2cDirection    = (i2cBuffer[2]);
     }
-//    else if (i2cBuffer[0] == 1)
-//        KP += 0.1;
-//    else if (i2cBuffer[0] == 2)
-//        KP -= 0.1;
-//    else if (i2cBuffer[0] == 3)
-//        KI += 0.1;
-//    else if (i2cBuffer[0] == 4)
-//        KI -= 0.1;
-//    else if (i2cBuffer[0] == 5)
-//        KD += 0.1;
-//    else if (i2cBuffer[0] == 6)
-//        KD -= 0.1;
-    else if (i2cBuffer[0] == 7)
-        AccumulatedError = 0;
 }
 
 // See Data Sheet page 208 for Slave Send instructions

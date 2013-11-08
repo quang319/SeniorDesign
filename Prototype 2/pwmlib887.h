@@ -15,7 +15,7 @@ extern "C" {
 
     //Function that configures the CCP module for PWM mode,
     //configure Timer2 to run
-    void BeginPWM();
+    void beginPWM();
     
     //Function that sets the PWM period by loading PR2 with value
     void SetPR2(int length);

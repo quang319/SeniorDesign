@@ -37,7 +37,7 @@ clearing the associated TRIS bit.
 
 //Function that configures the CCP module for PWM mode,
 //configure Timer2 to run
-void BeginPWM()
+void beginPWM()
 {
     //Disable PWM pin (CCP2) by setting associated TRIS bit;
     //  in this case, set RC1 as input, or TRISCbits.TRISC1 = 1

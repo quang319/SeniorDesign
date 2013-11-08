@@ -18,7 +18,7 @@
 
 
 // Function that initialises Timer0 as a timer and Timer1 as a counter
-void BeginEncoder()
+void beginEncoder()
 {
     // Timer0 Setup
     //  Timer0 is controlled by the OPTION_REG (shared by WDT)
@@ -40,8 +40,6 @@ void BeginEncoder()
 void EncUpdate(int *t1)
 {
     *t1 = TMR1;
-//    *t0 = TMR0;
     TMR1 = 0;
-//    TMR0 = 0;
 }
 
