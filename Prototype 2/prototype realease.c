@@ -186,7 +186,7 @@ int main()
         if (F.DIR == 1)
         {
             // Update counts before updating direction
-            EncUpdate(&EncoderCounts);                  //This will put the value of TMR1 into counts and then clear TMR0
+            encUpdate(&EncoderCounts);                  //This will put the value of TMR1 into counts and then clear TMR0
             updateData(EncoderCounts);			// This will add counts to OdometryCounts (which is the total distanced traveled so far.)
 
             // Update direction
@@ -200,7 +200,7 @@ int main()
         if (F.T0 == 1)
         {
             // Update to most recent encoder counts
-            EncUpdate(&EncoderCounts);
+            encUpdate(&EncoderCounts);
             updateData(EncoderCounts);
 /****** I'm keeping this in here just incase I change my mind and want to implement ***
 *        it later on. PID is perfectly function right now

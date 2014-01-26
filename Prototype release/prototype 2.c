@@ -167,7 +167,7 @@ int main()
         if (F.DIR == 1)
         {
             // Update counts before updating direction
-            EncUpdate(&counts);				//This will put the value of TMR1 into counts and then clear TMR0
+            encUpdate(&counts);				//This will put the value of TMR1 into counts and then clear TMR0
 //            UpdateData(counts);			// This will add counts to COUNTS (which is the total distanced traveled so far.)
 
             // Update direction
@@ -181,7 +181,7 @@ int main()
         if (F.T0 == 1)
         {
             // Update to most recent encoder counts
-            EncUpdate(&counts);
+            encUpdate(&counts);
             UpdateData(counts);
 
             // Perform PID
@@ -230,7 +230,7 @@ void Initialise()
     SSPIF = 0;				// Clear I2C flag
     GIE = 1;				// Enable all interrupts
 
-    BeginEncoder();         // initialize encoder registers (TMR0 & TMR1)
+    beginEncoder();         // initialize encoder registers (TMR0 & TMR1)
     PIE2 = 0;               // other peripherals disabled
 
 	// Clear and Initate TIMER registers
