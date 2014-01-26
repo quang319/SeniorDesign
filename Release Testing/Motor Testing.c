@@ -1,6 +1,10 @@
 /* Quang Nguyen
  * GCRobotics
  * Created 10/14/2013
+ *
+ * This is just to test if the motor is functioning correctly.
+ * It should start off slow for 2 sec and slowly get faster
+ * every 2 second increment.
  * 
  * 
  */
@@ -123,13 +127,6 @@ int main()
     Initialise();
     while(1)
     {
-        while(1)
-        {
-        PORTBbits.RB3 = FORWARD;
-        SetPulse(150);  
-        PORTD = PORTBbits.RB5;
-        __delay_ms(2000);// Clear error flag
-        }
         if (F.I2C == 1)
         {
             // Perform some I2C operation
@@ -197,15 +194,8 @@ int main()
 
             F.T0 = 0;                   // reset TMR0 flag
         } // end PID Loop               */
+		SetPulse(240);
 
-//		SetPulse(80);
-//		__delay_ms(2000);
-//		SetPulse(140);
-//		__delay_ms(2000);
-//		SetPulse(200);
-//		__delay_ms(2000);
-//		SetPulse(240);
-//		__delay_ms(2000);
 
     } // end while(1)
 
@@ -221,7 +211,6 @@ void Initialise()
 	BeginPWM();             // initialize PWM associated registers
 	SetPulse(0);			// Set PWM to 0 until Arduino say otherwise
 	
-	__delay_ms(10);			// let motor settle
 
 	PEIE = 1;               // generic peripheral interrupts enabled
     PIE1 = 0b00000000;      // I2C interrupts disable
@@ -261,7 +250,7 @@ void interrupt isr()
     {	
 		PORTD = 0x01;			// I2C error indicator: Got stuck in interrupt isr
 	
-		__delay_ms(1000);		// We should never enter this
+
 
         F.I2C = 1;              // set i2c flag bit
         i2cIsrHandler();		// interrupt flag was cleared in this function
